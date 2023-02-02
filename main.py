@@ -4,7 +4,6 @@
 import sys
 import os
 import shutil
-import platform
 
 
 from PyQt5.QtWidgets import (
