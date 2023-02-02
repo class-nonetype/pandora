@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MainWindow</class>
+ <widget class="QMainWindow" name="MainWindow">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>754</width>
+    <height>188</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>MainWindow</string>
+  </property>
+  <widget class="QWidget" name="centralwidget">
+   <layout class="QGridLayout" name="gridLayout">
+    <property name="leftMargin">
+     <number>0</number>
+    </property>
+    <property name="topMargin">
+     <number>0</number>
+    </property>
+    <property name="rightMargin">
+     <number>0</number>
+    </property>
+    <property name="bottomMargin">
+     <number>0</number>
+    </property>
+    <property name="spacing">
+     <number>0</number>
+    </property>
+    <item row="0" column="0">
+     <widget class="QFrame" name="frameContainer">
+      <property name="styleSheet">
+       <string notr="true">QFrame {
+
+	background-color : #111111;
+}</string>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::NoFrame</enum>
+      </property>
+      <property name="frameShadow">
+       <enum>QFrame::Plain</enum>
+      </property>
+      <property name="lineWidth">
+       <number>0</number>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_2">
+       <property name="leftMargin">
+        <number>0</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>0</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <property name="spacing">
+        <number>0</number>
+       </property>
+       <item row="2" column="3">
+        <spacer name="horizontalSpacer_3">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeType">
+          <enum>QSizePolicy::Fixed</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item row="3" column="0" colspan="4">
+        <spacer name="horizontalSpacer">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item row="2" column="1" alignment="Qt::AlignLeft">
+        <widget class="QLineEdit" name="lineEditData">
+         <property name="minimumSize">
+          <size>
+           <width>480</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>480</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">QLineEdit{
+	background-color: #000000;
+	font : 22 15pt &quot;Microsoft JhengHei UI Light&quot;;
+	color : #FFFFFF;
+	border-radius : 0px;
+	text-align : left;
+	padding : 2px;
+	border-top : 2px solid #D37242;
+	border-bottom : 2px solid #D37242;
+	border-left : 2px solid #D37242;
+	border-right: 2px solid #D37242;
+}
+
+QLineEdit:hover{
+	background-color: #000000;
+	font : 22 15pt &quot;Microsoft JhengHei UI Light&quot;;
+	color : #FFFFFF;
+
+}</string>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <spacer name="horizontalSpacer_2">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeType">
+          <enum>QSizePolicy::Fixed</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item row="2" column="2" alignment="Qt::AlignRight">
+        <widget class="QPushButton" name="pushButtonConfirm">
+         <property name="minimumSize">
+          <size>
+           <width>170</width>
+           <height>36</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>170</width>
+           <height>36</height>
+          </size>
+         </property>
+         <property name="styleSheet">
+          <string notr="true">QPushButton{
+	background-color: #5F3E77;
+
+	border-top-left-radius: 14px;
+	border-bottom-left-radius: 14px;
+	border-top-right-radius: 14px;
+	border-bottom-right-radius: 14px;
+
+	font : 75 12pt &quot;Microsoft JhengHei UI&quot; bold;
+	color: #FFFFFF;
+	padding : 10px;
+
+	text-align : left;
+}
+
+QPushButton:hover{
+	background-color: #000000;
+	border-top-left-radius: 14px;	
+	border-bottom-left-radius: 14px;
+	border-top-right-radius: 14px;
+	border-bottom-right-radius: 14px;
+
+	font : 75 12pt &quot;Microsoft JhengHei UI&quot; bold;
+	color: #FFFFFF;
+	text-align : left;
+
+}</string>
+         </property>
+         <property name="text">
+          <string>Confirmar</string>
+         </property>
+         <property name="icon">
+          <iconset>
+           <normaloff>../img/icons/24x24/cil-arrow-circle-right.png</normaloff>../img/icons/24x24/cil-arrow-circle-right.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>24</width>
+           <height>24</height>
+          </size>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1" rowspan="2" colspan="3">
+        <widget class="QLabel" name="labelTitle">
+         <property name="styleSheet">
+          <string notr="true">QLabel {
+
+	font : 25 15pt &quot;Microsoft YaHei UI Light&quot;;
+	color : #FFFFFF;
+	
+	text-align: left;
+
+}</string>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
