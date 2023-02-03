@@ -41,7 +41,8 @@ class EnvironmentModel(object):
                     'data'          : None,
                     'scripts'       : None,
                 },
-                'file'          : []
+                'file'          : [],
+                'log'           : None
             },
             'data' : None
         }
@@ -53,12 +54,16 @@ class EnvironmentModel(object):
             self.attr['path']['storage']['database'] = self.attr['path']['storage']['storage'] + '\\' + 'database'
             self.attr['path']['storage']['data'] = self.attr['path']['storage']['storage'] + '\\' + 'data'
             self.attr['path']['storage']['scripts'] = self.attr['path']['storage']['database'] + '\\' + 'scripts'
+            self.attr['path']['log'] = self.attr['path']['execution'] + '\\' + 'app' + '\\' + 'log'
+            
+
 
         elif self.attr['system']['os'] == 'Linux':
             self.attr['path']['storage']['storage'] = self.attr['path']['execution'] + '/' + 'app' + '/' + 'storage'
             self.attr['path']['storage']['database'] = self.attr['path']['storage']['storage'] + '/' + 'database'
             self.attr['path']['storage']['data'] = self.attr['path']['storage']['storage'] + '/' + 'data'
             self.attr['path']['storage']['scripts'] = self.attr['path']['storage']['database'] + '/' + 'scripts'
+            self.attr['path']['log'] = self.attr['path']['execution'] + '/' + 'app' + '/' + 'log'
 
         if not os.path.exists(self.attr['path']['storage']['storage']):
             os.mkdir(self.attr['path']['storage']['storage'])
@@ -68,6 +73,9 @@ class EnvironmentModel(object):
         
         if not os.path.exists(self.attr['path']['storage']['data']):
             os.mkdir(self.attr['path']['storage']['data'])
+        
+        if not os.path.exists(self.attr['path']['log']):
+            os.mkdir(self.attr['path']['log'])
     
     
     def create_scripts_directory(self):
