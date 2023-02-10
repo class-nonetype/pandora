@@ -1,9 +1,10 @@
-# Requerimientos
+# Pandora
 
-1. PyQt5
-2. pandas
+1. ## Requerimientos
 
-# Codec
+    1. PyQt5
+    2. pandas
 
-En caso de tener problemas con la reproduccion de "X" formato, considerar tener los codecs necesarios
-* url https://files3.codecguide.com/K-Lite_Codec_Pack_1741_Standard.exe
+2. ## Codec
+    En caso de tener problemas con la reproduccion de "X" formato, considerar tener los codecs necesarios
+    * url https://files3.codecguide.com/K-Lite_Codec_Pack_1741_Standard.exe
