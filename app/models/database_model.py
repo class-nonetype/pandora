@@ -29,6 +29,9 @@ class DatabaseModel(object):
 
     def insert_data(self, query : str, parameters : tuple):
 
+        print(f'Ejecutando query -> {query}')
+        print(f'Insertando parametros -> {parameters}')
+
         self.cursor.execute(query, parameters)
         self.connection.commit()
     

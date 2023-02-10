@@ -7,177 +7,13 @@ from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 
 
-
-class SideGrip(QtWidgets.QWidget):
-
-    def __init__(self, parent, edge):
-        QtWidgets.QWidget.__init__(self, parent)
-
-        #self.setStyleSheet("border : 1px solid #000000;")
-
-        self.WidgetSideGrip = QtWidgets.QWidget(self)
-        self.WidgetSideGrip.setObjectName('WidgetSideGrip')
-        self.WidgetSideGrip.setStyleSheet('''
-            QWidget#WidgetSideGrip {
-                background: #D37242;
-                border-radius: 20px;
-                border: 12px solid #D37242;                   
-            }
-        ''')
-
-        self.BoxLayoutSideGrip = QtWidgets.QVBoxLayout(self)
-        self.BoxLayoutSideGrip.setContentsMargins(0, 0, 0, 0)
-        self.BoxLayoutSideGrip.addWidget(self.WidgetSideGrip)
-
-        if edge == QtCore.Qt.LeftEdge:
-            self.setCursor(QtCore.Qt.SizeHorCursor)
-            self.resizeFunction = self.resizeLeft
-
-        elif edge == QtCore.Qt.TopEdge:
-            self.setCursor(QtCore.Qt.SizeVerCursor)
-            self.resizeFunction = self.resizeTop
-
-        elif edge == QtCore.Qt.RightEdge:
-            self.setCursor(QtCore.Qt.SizeHorCursor)
-            self.resizeFunction = self.resizeRight
-
-        else:
-            self.setCursor(QtCore.Qt.SizeVerCursor)
-            self.resizeFunction = self.resizeBottom
-
-        self.mousePos = None
-
-
-
-    def resizeLeft(self, delta):
-        window = self.window()
-        width = max(window.minimumWidth(), window.width() - delta.x())
-        geo = window.geometry()
-        geo.setLeft(geo.right() - width)
-        window.setGeometry(geo)
-
-    def resizeTop(self, delta):
-        window = self.window()
-        height = max(window.minimumHeight(), window.height() - delta.y())
-        geo = window.geometry()
-        geo.setTop(geo.bottom() - height)
-        window.setGeometry(geo)
-
-    def resizeRight(self, delta):
-        window = self.window()
-        width = max(window.minimumWidth(), window.width() + delta.x())
-        window.resize(width, window.height())
-
-    def resizeBottom(self, delta):
-        window = self.window()
-        height = max(window.minimumHeight(), window.height() + delta.y())
-        window.resize(window.width(), height)
-
-    def mousePressEvent(self, event):
-        if event.button() == QtCore.Qt.LeftButton:
-            self.mousePos = event.pos()
-
-    def mouseMoveEvent(self, event):
-        if self.mousePos is not None:
-            delta = event.pos() - self.mousePos
-            self.resizeFunction(delta)
-
-    def mouseReleaseEvent(self, event):
-        self.mousePos = None
-
-
-
 class MainWindowView(QtWidgets.QMainWindow):
-    _gripSize = 1
 
     def __init__(self, Controller):
         super().__init__()
 
         self.Controller = Controller
 
-        self.setWindowFlags(Qt.CustomizeWindowHint | Qt.FramelessWindowHint)
-        self.sideGrips = [
-            SideGrip(self, QtCore.Qt.LeftEdge), 
-            SideGrip(self, QtCore.Qt.TopEdge), 
-            SideGrip(self, QtCore.Qt.RightEdge), 
-            SideGrip(self, QtCore.Qt.BottomEdge), 
-        ]
-        self.cornerGrips = [QtWidgets.QSizeGrip(self) for i in range(4)]
-
-    @property
-    def gripSize(self):
-        return self._gripSize
-
-    def setGripSize(self, size):
-        if size == self._gripSize:
-            return
-        self._gripSize = max(2, size)
-        self.updateGrips()
-
-    def updateGrips(self):
-        self.setContentsMargins(*[self.gripSize] * 4)
-
-        outRect = self.rect()
-        inRect = outRect.adjusted(self.gripSize, self.gripSize,
-            -self.gripSize, -self.gripSize)
-
-        # top left
-        self.cornerGrips[0].setGeometry(
-            QtCore.QRect(outRect.topLeft(), inRect.topLeft()))
-
-        # top right
-        self.cornerGrips[1].setGeometry(
-            QtCore.QRect(outRect.topRight(), inRect.topRight()).normalized())
-
-        # bottom right
-        self.cornerGrips[2].setGeometry(
-            QtCore.QRect(inRect.bottomRight(), outRect.bottomRight()))
-
-        # bottom left
-        self.cornerGrips[3].setGeometry(
-            QtCore.QRect(outRect.bottomLeft(), inRect.bottomLeft()).normalized())
-
-        # left edge
-        self.sideGrips[0].setGeometry(
-            0, inRect.top(), self.gripSize, inRect.height())
-
-        # top edge
-        self.sideGrips[1].setGeometry(
-            inRect.left(), 0, inRect.width(), self.gripSize)
-
-        # right edge
-        self.sideGrips[2].setGeometry(
-            inRect.left() + inRect.width(), 
-            inRect.top(), self.gripSize, inRect.height())
-
-        # bottom edge
-        self.sideGrips[3].setGeometry(
-            self.gripSize, inRect.top() + inRect.height(), 
-            inRect.width(), self.gripSize)
-
-    def closeEvent(self, event):
-        self.destroy()
-
-    def resizeEvent(self, event):
-        QtWidgets.QMainWindow.resizeEvent(self, event)
-        self.updateGrips()
-
-    def mousePressEvent(self, event):
-        if event.buttons() == Qt.LeftButton:
-            self.m_drag = True
-            self.m_DragPosition = event.globalPos()-self.pos()
-            event.accept()
-
-    def mouseMoveEvent(self, event):
-        try:
-            if event.buttons() and Qt.LeftButton:
-                self.move(event.globalPos()-self.m_DragPosition)
-                event.accept()
-        except AttributeError:
-            pass
-
-    def mouseReleaseEvent(self, event):
-        self.m_drag = False
 
     def keyPressEvent(self, event):
         if event.key() == QtCore.Qt.Key_Escape:
@@ -196,7 +32,7 @@ class MainWindowView(QtWidgets.QMainWindow):
     def setupUi(self):
         self.setObjectName("mainWindow")
         self.setEnabled(True)
-        self.resize(519, 815)
+        self.resize(552, 896)
         self.centralwidget = QWidget(self)
         self.centralwidget.setObjectName(u"centralwidget")
         self.gridLayout = QGridLayout(self.centralwidget)
@@ -229,7 +65,9 @@ class MainWindowView(QtWidgets.QMainWindow):
 "\n"
 "}")
         self.gridLayout_4 = QGridLayout(self.widgetContainer)
+        self.gridLayout_4.setSpacing(0)
         self.gridLayout_4.setObjectName(u"gridLayout_4")
+        self.gridLayout_4.setContentsMargins(0, 0, 0, 0)
         self.framePlayerContent = QFrame(self.widgetContainer)
         self.framePlayerContent.setObjectName(u"framePlayerContent")
         self.framePlayerContent.setStyleSheet(u"QFrame {\n"
@@ -269,11 +107,7 @@ class MainWindowView(QtWidgets.QMainWindow):
         self.gridLayout_11.setContentsMargins(0, 0, 0, 0)
         self.horizontalSpacer_7 = QSpacerItem(40, 20, QSizePolicy.Fixed, QSizePolicy.Minimum)
 
-        self.gridLayout_11.addItem(self.horizontalSpacer_7, 1, 3, 1, 1)
-
-        self.horizontalSpacer_6 = QSpacerItem(40, 20, QSizePolicy.Fixed, QSizePolicy.Minimum)
-
-        self.gridLayout_11.addItem(self.horizontalSpacer_6, 1, 1, 1, 1)
+        self.gridLayout_11.addItem(self.horizontalSpacer_7, 2, 3, 1, 1)
 
         self.labelCoverArt = QLabel(self.frameCoverArt)
         self.labelCoverArt.setObjectName(u"labelCoverArt")
@@ -286,11 +120,19 @@ class MainWindowView(QtWidgets.QMainWindow):
         self.labelCoverArt.setScaledContents(True)
         self.labelCoverArt.setWordWrap(False)
 
-        self.gridLayout_11.addWidget(self.labelCoverArt, 1, 2, 1, 1, Qt.AlignHCenter)
+        self.gridLayout_11.addWidget(self.labelCoverArt, 2, 2, 1, 1, Qt.AlignHCenter)
+
+        self.horizontalSpacer_6 = QSpacerItem(40, 20, QSizePolicy.Fixed, QSizePolicy.Minimum)
+
+        self.gridLayout_11.addItem(self.horizontalSpacer_6, 2, 1, 1, 1)
 
         self.verticalSpacer_14 = QSpacerItem(20, 5, QSizePolicy.Minimum, QSizePolicy.Fixed)
 
         self.gridLayout_11.addItem(self.verticalSpacer_14, 0, 2, 1, 1)
+
+        self.verticalSpacer_5 = QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Fixed)
+
+        self.gridLayout_11.addItem(self.verticalSpacer_5, 1, 2, 1, 1)
 
 
         self.gridLayout_9.addWidget(self.frameCoverArt, 0, 0, 1, 1)
@@ -350,7 +192,7 @@ class MainWindowView(QtWidgets.QMainWindow):
 
         self.gridLayout_10.addItem(self.verticalSpacer_2, 4, 0, 1, 1)
 
-        self.verticalSpacer = QSpacerItem(20, 30, QSizePolicy.Minimum, QSizePolicy.Fixed)
+        self.verticalSpacer = QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Fixed)
 
         self.gridLayout_10.addItem(self.verticalSpacer, 0, 0, 1, 1)
 
@@ -509,7 +351,7 @@ class MainWindowView(QtWidgets.QMainWindow):
 
         self.gridLayout_14.addItem(self.horizontalSpacer_5, 0, 4, 1, 1)
 
-        self.verticalSpacer_3 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.verticalSpacer_3 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Fixed)
 
         self.gridLayout_14.addItem(self.verticalSpacer_3, 1, 2, 1, 1)
 
@@ -709,57 +551,23 @@ class MainWindowView(QtWidgets.QMainWindow):
 "\n"
 "}")
         self.gridLayout_7 = QGridLayout(self.widgetLibrary)
+        self.gridLayout_7.setSpacing(0)
         self.gridLayout_7.setObjectName(u"gridLayout_7")
+        self.gridLayout_7.setContentsMargins(0, 0, 0, 0)
         self.frameLibraryContent = QFrame(self.widgetLibrary)
         self.frameLibraryContent.setObjectName(u"frameLibraryContent")
         self.frameLibraryContent.setStyleSheet(u"QFrame {\n"
 "\n"
 "	background-color : #111111;\n"
 "}")
-        self.frameLibraryContent.setFrameShape(QFrame.StyledPanel)
-        self.frameLibraryContent.setFrameShadow(QFrame.Raised)
+        self.frameLibraryContent.setFrameShape(QFrame.NoFrame)
+        self.frameLibraryContent.setFrameShadow(QFrame.Plain)
+        self.frameLibraryContent.setLineWidth(0)
         self.gridLayout_13 = QGridLayout(self.frameLibraryContent)
         self.gridLayout_13.setObjectName(u"gridLayout_13")
-        self.labelFileOptions = QLabel(self.frameLibraryContent)
-        self.labelFileOptions.setObjectName(u"labelFileOptions")
-        self.labelFileOptions.setStyleSheet(u"QLabel {\n"
-"	font : 77 18pt \"Microsoft JhengHei UI\";\n"
-"	color : #FFFFFF;\n"
-"	border-radius : 0px;\n"
-"	text-align : left;\n"
-"	padding-left: 5px;\n"
-"}\n"
-"\n"
-"QLabel::hover {\n"
-"	color : #4F6FA0;\n"
-"}\n"
-"")
-
-        self.gridLayout_13.addWidget(self.labelFileOptions, 1, 0, 1, 1)
-
-        self.listViewPlaylist = QListView(self.frameLibraryContent)
-        self.listViewPlaylist.setObjectName(u"listViewPlaylist")
-        self.listViewPlaylist.setStyleSheet(u"QListView {\n"
-"	font : 77 13pt \"Microsoft JhengHei UI\";\n"
-"	color : #FFFFFF;\n"
-"	border-radius : 0px;\n"
-"	text-align : left;\n"
-"	padding-left: 5px;\n"
-"}\n"
-"\n"
-"QListView::hover {\n"
-"	color : #4F6FA0;\n"
-"}")
-        self.listViewPlaylist.setFrameShadow(QFrame.Plain)
-        self.listViewPlaylist.setDragEnabled(True)
-        self.listViewPlaylist.setDragDropMode(QAbstractItemView.DragDrop)
-        self.listViewPlaylist.setDefaultDropAction(Qt.MoveAction)
-        self.listViewPlaylist.setResizeMode(QListView.Fixed)
-        self.listViewPlaylist.setLayoutMode(QListView.SinglePass)
-        self.listViewPlaylist.setItemAlignment(Qt.AlignLeading)
-
-        self.gridLayout_13.addWidget(self.listViewPlaylist, 4, 0, 1, 2)
-
+        self.gridLayout_13.setHorizontalSpacing(9)
+        self.gridLayout_13.setVerticalSpacing(0)
+        self.gridLayout_13.setContentsMargins(9, 0, 9, 0)
         self.labelPlaylist = QLabel(self.frameLibraryContent)
         self.labelPlaylist.setObjectName(u"labelPlaylist")
         self.labelPlaylist.setStyleSheet(u"QLabel {\n"
@@ -775,14 +583,194 @@ class MainWindowView(QtWidgets.QMainWindow):
 "}\n"
 "")
 
-        self.gridLayout_13.addWidget(self.labelPlaylist, 3, 0, 1, 1)
+        self.gridLayout_13.addWidget(self.labelPlaylist, 3, 1, 1, 1, Qt.AlignLeft)
+
+        self.verticalSpacer_8 = QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Fixed)
+
+        self.gridLayout_13.addItem(self.verticalSpacer_8, 0, 0, 1, 11)
 
         self.frameOptions = QFrame(self.frameLibraryContent)
         self.frameOptions.setObjectName(u"frameOptions")
-        self.frameOptions.setFrameShape(QFrame.StyledPanel)
-        self.frameOptions.setFrameShadow(QFrame.Raised)
+        self.frameOptions.setFrameShape(QFrame.NoFrame)
+        self.frameOptions.setFrameShadow(QFrame.Plain)
+        self.frameOptions.setLineWidth(0)
         self.gridLayout_15 = QGridLayout(self.frameOptions)
+        self.gridLayout_15.setSpacing(0)
         self.gridLayout_15.setObjectName(u"gridLayout_15")
+        self.gridLayout_15.setContentsMargins(0, 0, 0, 0)
+        self.verticalSpacer_9 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+
+        self.gridLayout_15.addItem(self.verticalSpacer_9, 7, 0, 1, 1)
+
+        self.pushButtonPlaylists = QPushButton(self.frameOptions)
+        self.pushButtonPlaylists.setObjectName(u"pushButtonPlaylists")
+        self.pushButtonPlaylists.setStyleSheet(u"QPushButton{\n"
+"	background-color: #000000;\n"
+"\n"
+"	border-top-left-radius: 14px;\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	padding : 10px;\n"
+"\n"
+"	text-align : left;\n"
+"}\n"
+"\n"
+"QPushButton:hover{\n"
+"	background-color: #222222;\n"
+"	border-top-left-radius: 14px;	\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	text-align : left;\n"
+"\n"
+"}")
+        icon5 = QIcon()
+        icon5.addFile(u"app/resources/img/icons/24x24/cil-list.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.pushButtonPlaylists.setIcon(icon5)
+        self.pushButtonPlaylists.setIconSize(QSize(24, 24))
+
+        self.gridLayout_15.addWidget(self.pushButtonPlaylists, 13, 0, 1, 1)
+
+        self.labelMusic = QLabel(self.frameOptions)
+        self.labelMusic.setObjectName(u"labelMusic")
+        self.labelMusic.setStyleSheet(u"QLabel {\n"
+"	font : 77 18pt \"Microsoft JhengHei UI\";\n"
+"	color : #FFFFFF;\n"
+"	border-radius : 0px;\n"
+"	text-align : left;\n"
+"	padding-left: 5px;\n"
+"}\n"
+"\n"
+"QLabel::hover {\n"
+"	color : #4F6FA0;\n"
+"}\n"
+"")
+
+        self.gridLayout_15.addWidget(self.labelMusic, 8, 0, 1, 1, Qt.AlignLeft)
+
+        self.pushButtonAddPath = QPushButton(self.frameOptions)
+        self.pushButtonAddPath.setObjectName(u"pushButtonAddPath")
+        self.pushButtonAddPath.setStyleSheet(u"QPushButton{\n"
+"	background-color: #000000;\n"
+"\n"
+"	border-top-left-radius: 14px;\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	padding : 10px;\n"
+"\n"
+"	text-align : left;\n"
+"}\n"
+"\n"
+"QPushButton:hover{\n"
+"	background-color: #222222;\n"
+"	border-top-left-radius: 14px;	\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	text-align : left;\n"
+"\n"
+"}")
+        icon6 = QIcon()
+        icon6.addFile(u"app/resources/img/icons/24x24/cil-plus.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.pushButtonAddPath.setIcon(icon6)
+        self.pushButtonAddPath.setIconSize(QSize(24, 24))
+
+        self.gridLayout_15.addWidget(self.pushButtonAddPath, 5, 0, 1, 1)
+
+        self.verticalSpacer_16 = QSpacerItem(20, 5, QSizePolicy.Minimum, QSizePolicy.Fixed)
+
+        self.gridLayout_15.addItem(self.verticalSpacer_16, 9, 0, 1, 1)
+
+        self.verticalSpacer_15 = QSpacerItem(20, 5, QSizePolicy.Minimum, QSizePolicy.Fixed)
+
+        self.gridLayout_15.addItem(self.verticalSpacer_15, 2, 0, 1, 1)
+
+        self.pushButtonAlbums = QPushButton(self.frameOptions)
+        self.pushButtonAlbums.setObjectName(u"pushButtonAlbums")
+        self.pushButtonAlbums.setStyleSheet(u"QPushButton{\n"
+"	background-color: #000000;\n"
+"\n"
+"	border-top-left-radius: 14px;\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	padding : 10px;\n"
+"\n"
+"	text-align : left;\n"
+"}\n"
+"\n"
+"QPushButton:hover{\n"
+"	background-color: #222222;\n"
+"	border-top-left-radius: 14px;	\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	text-align : left;\n"
+"\n"
+"}")
+        icon7 = QIcon()
+        icon7.addFile(u"app/resources/img/icons/24x24/cil-library.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.pushButtonAlbums.setIcon(icon7)
+        self.pushButtonAlbums.setIconSize(QSize(24, 24))
+
+        self.gridLayout_15.addWidget(self.pushButtonAlbums, 11, 0, 1, 1)
+
+        self.pushButtonSongs = QPushButton(self.frameOptions)
+        self.pushButtonSongs.setObjectName(u"pushButtonSongs")
+        self.pushButtonSongs.setStyleSheet(u"QPushButton{\n"
+"	background-color: #000000;\n"
+"\n"
+"	border-top-left-radius: 14px;\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	padding : 10px;\n"
+"\n"
+"	text-align : left;\n"
+"}\n"
+"\n"
+"QPushButton:hover{\n"
+"	background-color: #222222;\n"
+"	border-top-left-radius: 14px;	\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	text-align : left;\n"
+"\n"
+"}")
+        icon8 = QIcon()
+        icon8.addFile(u"app/resources/img/icons/24x24/cil-music-note.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.pushButtonSongs.setIcon(icon8)
+        self.pushButtonSongs.setIconSize(QSize(24, 24))
+
+        self.gridLayout_15.addWidget(self.pushButtonSongs, 12, 0, 1, 1)
+
         self.pushButtonAddDirectory = QPushButton(self.frameOptions)
         self.pushButtonAddDirectory.setObjectName(u"pushButtonAddDirectory")
         self.pushButtonAddDirectory.setStyleSheet(u"QPushButton{\n"
@@ -812,16 +800,20 @@ class MainWindowView(QtWidgets.QMainWindow):
 "	text-align : left;\n"
 "\n"
 "}")
-        icon5 = QIcon()
-        icon5.addFile(u"app/resources/img/icons/24x24/cil-folder-open.png", QSize(), QIcon.Normal, QIcon.Off)
-        self.pushButtonAddDirectory.setIcon(icon5)
+        icon9 = QIcon()
+        icon9.addFile(u"app/resources/img/icons/24x24/cil-folder-open.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.pushButtonAddDirectory.setIcon(icon9)
         self.pushButtonAddDirectory.setIconSize(QSize(24, 24))
 
-        self.gridLayout_15.addWidget(self.pushButtonAddDirectory, 2, 0, 1, 1)
+        self.gridLayout_15.addWidget(self.pushButtonAddDirectory, 4, 0, 1, 1)
 
-        self.pushButtonAddFile = QPushButton(self.frameOptions)
-        self.pushButtonAddFile.setObjectName(u"pushButtonAddFile")
-        self.pushButtonAddFile.setStyleSheet(u"QPushButton{\n"
+        self.verticalSpacer_6 = QSpacerItem(20, 25, QSizePolicy.Minimum, QSizePolicy.Fixed)
+
+        self.gridLayout_15.addItem(self.verticalSpacer_6, 15, 0, 1, 1)
+
+        self.pushButtonArtists = QPushButton(self.frameOptions)
+        self.pushButtonArtists.setObjectName(u"pushButtonArtists")
+        self.pushButtonArtists.setStyleSheet(u"QPushButton{\n"
 "	background-color: #000000;\n"
 "\n"
 "	border-top-left-radius: 14px;\n"
@@ -848,24 +840,29 @@ class MainWindowView(QtWidgets.QMainWindow):
 "	text-align : left;\n"
 "\n"
 "}")
-        icon6 = QIcon()
-        icon6.addFile(u"app/resources/img/icons/24x24/cil-music-note.png", QSize(), QIcon.Normal, QIcon.Off)
-        self.pushButtonAddFile.setIcon(icon6)
-        self.pushButtonAddFile.setIconSize(QSize(24, 24))
+        icon10 = QIcon()
+        icon10.addFile(u"app/resources/img/icons/24x24/cil-people.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.pushButtonArtists.setIcon(icon10)
+        self.pushButtonArtists.setIconSize(QSize(24, 24))
 
-        self.gridLayout_15.addWidget(self.pushButtonAddFile, 1, 0, 1, 1)
+        self.gridLayout_15.addWidget(self.pushButtonArtists, 10, 0, 1, 1)
 
-        self.verticalSpacer_9 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.labelFileOptions = QLabel(self.frameOptions)
+        self.labelFileOptions.setObjectName(u"labelFileOptions")
+        self.labelFileOptions.setStyleSheet(u"QLabel {\n"
+"	font : 77 18pt \"Microsoft JhengHei UI\";\n"
+"	color : #FFFFFF;\n"
+"	border-radius : 0px;\n"
+"	text-align : left;\n"
+"	padding-left: 5px;\n"
+"}\n"
+"\n"
+"QLabel::hover {\n"
+"	color : #4F6FA0;\n"
+"}\n"
+"")
 
-        self.gridLayout_15.addItem(self.verticalSpacer_9, 4, 0, 1, 1)
-
-        self.verticalSpacer_6 = QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Fixed)
-
-        self.gridLayout_15.addItem(self.verticalSpacer_6, 6, 0, 1, 1)
-
-        self.verticalSpacer_7 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
-
-        self.gridLayout_15.addItem(self.verticalSpacer_7, 9, 0, 1, 1)
+        self.gridLayout_15.addWidget(self.labelFileOptions, 1, 0, 1, 1, Qt.AlignLeft)
 
         self.pushButtonFavorites = QPushButton(self.frameOptions)
         self.pushButtonFavorites.setObjectName(u"pushButtonFavorites")
@@ -899,11 +896,15 @@ class MainWindowView(QtWidgets.QMainWindow):
         self.pushButtonFavorites.setIcon(icon1)
         self.pushButtonFavorites.setIconSize(QSize(24, 24))
 
-        self.gridLayout_15.addWidget(self.pushButtonFavorites, 8, 0, 1, 1)
+        self.gridLayout_15.addWidget(self.pushButtonFavorites, 14, 0, 1, 1)
 
-        self.pushButtonAddPath = QPushButton(self.frameOptions)
-        self.pushButtonAddPath.setObjectName(u"pushButtonAddPath")
-        self.pushButtonAddPath.setStyleSheet(u"QPushButton{\n"
+        self.verticalSpacer_18 = QSpacerItem(20, 25, QSizePolicy.Minimum, QSizePolicy.Fixed)
+
+        self.gridLayout_15.addItem(self.verticalSpacer_18, 6, 0, 1, 1)
+
+        self.pushButtonAddFile = QPushButton(self.frameOptions)
+        self.pushButtonAddFile.setObjectName(u"pushButtonAddFile")
+        self.pushButtonAddFile.setStyleSheet(u"QPushButton{\n"
 "	background-color: #000000;\n"
 "\n"
 "	border-top-left-radius: 14px;\n"
@@ -930,16 +931,56 @@ class MainWindowView(QtWidgets.QMainWindow):
 "	text-align : left;\n"
 "\n"
 "}")
-        icon7 = QIcon()
-        icon7.addFile(u"app/resources/img/icons/24x24/cil-plus.png", QSize(), QIcon.Normal, QIcon.Off)
-        self.pushButtonAddPath.setIcon(icon7)
-        self.pushButtonAddPath.setIconSize(QSize(24, 24))
+        icon11 = QIcon()
+        icon11.addFile(u"app/resources/img/icons/24x24/cil-copy.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.pushButtonAddFile.setIcon(icon11)
+        self.pushButtonAddFile.setIconSize(QSize(24, 24))
 
-        self.gridLayout_15.addWidget(self.pushButtonAddPath, 3, 0, 1, 1)
+        self.gridLayout_15.addWidget(self.pushButtonAddFile, 3, 0, 1, 1)
 
-        self.pushButtonPlaylists = QPushButton(self.frameOptions)
-        self.pushButtonPlaylists.setObjectName(u"pushButtonPlaylists")
-        self.pushButtonPlaylists.setStyleSheet(u"QPushButton{\n"
+
+        self.gridLayout_13.addWidget(self.frameOptions, 2, 0, 1, 11)
+
+        self.lineEditSearcher = QLineEdit(self.frameLibraryContent)
+        self.lineEditSearcher.setObjectName(u"lineEditSearcher")
+        self.lineEditSearcher.setMinimumSize(QSize(260, 0))
+        self.lineEditSearcher.setStyleSheet(u"QLineEdit{\n"
+"	background-color: #222222;\n"
+"\n"
+"	border-top-left-radius: 14px;\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	padding : 10px;\n"
+"\n"
+"	text-align : left;\n"
+"}\n"
+"\n"
+"QLineEdit:hover{\n"
+"	background-color: #444444;\n"
+"	border-top-left-radius: 14px;	\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	text-align : left;\n"
+"\n"
+"}")
+
+        self.gridLayout_13.addWidget(self.lineEditSearcher, 5, 1, 1, 2)
+
+        self.horizontalSpacer_9 = QSpacerItem(20, 20, QSizePolicy.Fixed, QSizePolicy.Minimum)
+
+        self.gridLayout_13.addItem(self.horizontalSpacer_9, 5, 3, 1, 1)
+
+        self.pushButtonSaveActualPlaylist = QPushButton(self.frameLibraryContent)
+        self.pushButtonSaveActualPlaylist.setObjectName(u"pushButtonSaveActualPlaylist")
+        self.pushButtonSaveActualPlaylist.setStyleSheet(u"QPushButton{\n"
 "	background-color: #000000;\n"
 "\n"
 "	border-top-left-radius: 14px;\n"
@@ -966,40 +1007,90 @@ class MainWindowView(QtWidgets.QMainWindow):
 "	text-align : left;\n"
 "\n"
 "}")
-        icon8 = QIcon()
-        icon8.addFile(u"app/resources/img/icons/24x24/cil-list.png", QSize(), QIcon.Normal, QIcon.Off)
-        self.pushButtonPlaylists.setIcon(icon8)
-        self.pushButtonPlaylists.setIconSize(QSize(24, 24))
+        icon12 = QIcon()
+        icon12.addFile(u"app/resources/img/icons/24x24/cil-library-add.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.pushButtonSaveActualPlaylist.setIcon(icon12)
+        self.pushButtonSaveActualPlaylist.setIconSize(QSize(24, 24))
 
-        self.gridLayout_15.addWidget(self.pushButtonPlaylists, 5, 0, 1, 1)
+        self.gridLayout_13.addWidget(self.pushButtonSaveActualPlaylist, 3, 5, 1, 4)
 
-        self.labelInterests = QLabel(self.frameOptions)
-        self.labelInterests.setObjectName(u"labelInterests")
-        self.labelInterests.setStyleSheet(u"QLabel {\n"
-"	font : 77 18pt \"Microsoft JhengHei UI\";\n"
+        self.listViewPlaylist = QListView(self.frameLibraryContent)
+        self.listViewPlaylist.setObjectName(u"listViewPlaylist")
+        self.listViewPlaylist.setMinimumSize(QSize(0, 150))
+        self.listViewPlaylist.setStyleSheet(u"QListView {\n"
+"	font : 77 13pt \"Microsoft JhengHei UI\";\n"
 "	color : #FFFFFF;\n"
 "	border-radius : 0px;\n"
 "	text-align : left;\n"
 "	padding-left: 5px;\n"
 "}\n"
 "\n"
-"QLabel::hover {\n"
+"QListView::hover {\n"
 "	color : #4F6FA0;\n"
+"}")
+        self.listViewPlaylist.setFrameShadow(QFrame.Plain)
+        self.listViewPlaylist.setDragEnabled(True)
+        self.listViewPlaylist.setDragDropMode(QAbstractItemView.DragDrop)
+        self.listViewPlaylist.setDefaultDropAction(Qt.MoveAction)
+        self.listViewPlaylist.setResizeMode(QListView.Fixed)
+        self.listViewPlaylist.setLayoutMode(QListView.SinglePass)
+        self.listViewPlaylist.setItemAlignment(Qt.AlignLeading)
+
+        self.gridLayout_13.addWidget(self.listViewPlaylist, 8, 0, 1, 11)
+
+        self.horizontalSpacer_10 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.gridLayout_13.addItem(self.horizontalSpacer_10, 4, 1, 1, 8)
+
+        self.horizontalSpacer_8 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.gridLayout_13.addItem(self.horizontalSpacer_8, 3, 2, 1, 1)
+
+        self.horizontalSpacer_13 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.gridLayout_13.addItem(self.horizontalSpacer_13, 6, 1, 1, 8)
+
+        self.pushButtonSearch = QPushButton(self.frameLibraryContent)
+        self.pushButtonSearch.setObjectName(u"pushButtonSearch")
+        self.pushButtonSearch.setStyleSheet(u"QPushButton{\n"
+"	background-color: #5F3E77;\n"
+"\n"
+"	border-top-left-radius: 14px;\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	padding : 10px;\n"
+"\n"
+"	text-align : left;\n"
 "}\n"
-"")
+"\n"
+"QPushButton:hover{\n"
+"	background-color: #222222;\n"
+"	border-top-left-radius: 14px;	\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	text-align : left;\n"
+"\n"
+"}")
+        icon13 = QIcon()
+        icon13.addFile(u"app/resources/img/icons/24x24/cil-arrow-circle-right.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.pushButtonSearch.setIcon(icon13)
+        self.pushButtonSearch.setIconSize(QSize(24, 24))
 
-        self.gridLayout_15.addWidget(self.labelInterests, 7, 0, 1, 1, Qt.AlignLeft)
+        self.gridLayout_13.addWidget(self.pushButtonSearch, 5, 5, 1, 4)
 
-
-        self.gridLayout_13.addWidget(self.frameOptions, 2, 0, 1, 2)
-
-        self.verticalSpacer_8 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Fixed)
-
-        self.gridLayout_13.addItem(self.verticalSpacer_8, 0, 0, 1, 2)
-
-        self.pushButton = QPushButton(self.frameLibraryContent)
-        self.pushButton.setObjectName(u"pushButton")
-        self.pushButton.setStyleSheet(u"QPushButton{\n"
+        self.pushButtonSettings = QPushButton(self.frameLibraryContent)
+        self.pushButtonSettings.setObjectName(u"pushButtonSettings")
+        self.pushButtonSettings.setMinimumSize(QSize(42, 42))
+        self.pushButtonSettings.setMaximumSize(QSize(42, 42))
+        self.pushButtonSettings.setStyleSheet(u"QPushButton{\n"
 "	background-color: #000000;\n"
 "\n"
 "	border-top-left-radius: 14px;\n"
@@ -1026,12 +1117,48 @@ class MainWindowView(QtWidgets.QMainWindow):
 "	text-align : left;\n"
 "\n"
 "}")
-        icon9 = QIcon()
-        icon9.addFile(u"app/resources/img/icons/24x24/cil-library-add.png", QSize(), QIcon.Normal, QIcon.Off)
-        self.pushButton.setIcon(icon9)
-        self.pushButton.setIconSize(QSize(24, 24))
+        icon14 = QIcon()
+        icon14.addFile(u"app/resources/img/icons/24x24/cil-settings.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.pushButtonSettings.setIcon(icon14)
+        self.pushButtonSettings.setIconSize(QSize(24, 24))
 
-        self.gridLayout_13.addWidget(self.pushButton, 3, 1, 1, 1)
+        self.gridLayout_13.addWidget(self.pushButtonSettings, 1, 7, 1, 1)
+
+        self.pushButtonSong = QPushButton(self.frameLibraryContent)
+        self.pushButtonSong.setObjectName(u"pushButtonSong")
+        self.pushButtonSong.setMinimumSize(QSize(42, 42))
+        self.pushButtonSong.setMaximumSize(QSize(42, 42))
+        self.pushButtonSong.setStyleSheet(u"QPushButton{\n"
+"	background-color: #000000;\n"
+"\n"
+"	border-top-left-radius: 14px;\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	padding : 10px;\n"
+"\n"
+"	text-align : left;\n"
+"}\n"
+"\n"
+"QPushButton:hover{\n"
+"	background-color: #222222;\n"
+"	border-top-left-radius: 14px;	\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	text-align : left;\n"
+"\n"
+"}")
+        self.pushButtonSong.setIcon(icon)
+        self.pushButtonSong.setIconSize(QSize(24, 24))
+
+        self.gridLayout_13.addWidget(self.pushButtonSong, 1, 8, 1, 1)
 
 
         self.gridLayout_7.addWidget(self.frameLibraryContent, 0, 0, 1, 1)
@@ -1061,27 +1188,6 @@ class MainWindowView(QtWidgets.QMainWindow):
         self.gridLayout_17.setSpacing(0)
         self.gridLayout_17.setObjectName(u"gridLayout_17")
         self.gridLayout_17.setContentsMargins(0, 0, 0, 0)
-        self.labelPlaylisr = QLabel(self.framePlaylistContent)
-        self.labelPlaylisr.setObjectName(u"labelPlaylisr")
-        self.labelPlaylisr.setStyleSheet(u"QLabel {\n"
-"	font : 77 18pt \"Microsoft JhengHei UI\";\n"
-"	color : #FFFFFF;\n"
-"	border-radius : 0px;\n"
-"	text-align : left;\n"
-"	padding-left: 5px;\n"
-"}\n"
-"\n"
-"QLabel::hover {\n"
-"	color : #4F6FA0;\n"
-"}\n"
-"")
-
-        self.gridLayout_17.addWidget(self.labelPlaylisr, 1, 0, 1, 1)
-
-        self.verticalSpacer_10 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Fixed)
-
-        self.gridLayout_17.addItem(self.verticalSpacer_10, 0, 0, 1, 1)
-
         self.listViewPlaylists = QListView(self.framePlaylistContent)
         self.listViewPlaylists.setObjectName(u"listViewPlaylists")
         self.listViewPlaylists.setStyleSheet(u"QListView {\n"
@@ -1096,15 +1202,77 @@ class MainWindowView(QtWidgets.QMainWindow):
 "	color : #4F6FA0;\n"
 "}")
         self.listViewPlaylists.setFrameShadow(QFrame.Plain)
+        self.listViewPlaylists.setDragEnabled(True)
+        self.listViewPlaylists.setDragDropMode(QAbstractItemView.DragDrop)
+        self.listViewPlaylists.setDefaultDropAction(Qt.MoveAction)
         self.listViewPlaylists.setResizeMode(QListView.Fixed)
         self.listViewPlaylists.setLayoutMode(QListView.SinglePass)
         self.listViewPlaylists.setItemAlignment(Qt.AlignLeading)
 
-        self.gridLayout_17.addWidget(self.listViewPlaylists, 3, 0, 1, 1)
+        self.gridLayout_17.addWidget(self.listViewPlaylists, 5, 0, 1, 1)
 
         self.verticalSpacer_11 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Fixed)
 
-        self.gridLayout_17.addItem(self.verticalSpacer_11, 2, 0, 1, 1)
+        self.gridLayout_17.addItem(self.verticalSpacer_11, 4, 0, 1, 1)
+
+        self.verticalSpacer_12 = QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Fixed)
+
+        self.gridLayout_17.addItem(self.verticalSpacer_12, 1, 0, 1, 1)
+
+        self.labelPlaylisr = QLabel(self.framePlaylistContent)
+        self.labelPlaylisr.setObjectName(u"labelPlaylisr")
+        self.labelPlaylisr.setStyleSheet(u"QLabel {\n"
+"	font : 77 18pt \"Microsoft JhengHei UI\";\n"
+"	color : #FFFFFF;\n"
+"	border-radius : 0px;\n"
+"	text-align : left;\n"
+"	padding-right: 5px;\n"
+"}\n"
+"\n"
+"QLabel::hover {\n"
+"	color : #4F6FA0;\n"
+"}\n"
+"")
+
+        self.gridLayout_17.addWidget(self.labelPlaylisr, 3, 0, 1, 1, Qt.AlignRight)
+
+        self.pushButton = QPushButton(self.framePlaylistContent)
+        self.pushButton.setObjectName(u"pushButton")
+        self.pushButton.setMinimumSize(QSize(42, 42))
+        self.pushButton.setMaximumSize(QSize(42, 42))
+        self.pushButton.setStyleSheet(u"QPushButton{\n"
+"	background-color: #000000;\n"
+"\n"
+"	border-top-left-radius: 14px;\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	padding : 10px;\n"
+"\n"
+"	text-align : left;\n"
+"}\n"
+"\n"
+"QPushButton:hover{\n"
+"	background-color: #222222;\n"
+"	border-top-left-radius: 14px;	\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	text-align : left;\n"
+"\n"
+"}")
+        icon15 = QIcon()
+        icon15.addFile(u"app/resources/img/icons/24x24/cil-arrow-circle-left.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.pushButton.setIcon(icon15)
+        self.pushButton.setIconSize(QSize(24, 24))
+
+        self.gridLayout_17.addWidget(self.pushButton, 2, 0, 1, 1)
 
 
         self.gridLayout_16.addWidget(self.framePlaylistContent, 0, 0, 1, 1)
@@ -1134,23 +1302,6 @@ class MainWindowView(QtWidgets.QMainWindow):
         self.gridLayout_19.setSpacing(0)
         self.gridLayout_19.setObjectName(u"gridLayout_19")
         self.gridLayout_19.setContentsMargins(0, 0, 0, 0)
-        self.labelInterest = QLabel(self.frameInterestContent)
-        self.labelInterest.setObjectName(u"labelInterest")
-        self.labelInterest.setStyleSheet(u"QLabel {\n"
-"	font : 77 18pt \"Microsoft JhengHei UI\";\n"
-"	color : #FFFFFF;\n"
-"	border-radius : 0px;\n"
-"	text-align : left;\n"
-"	padding-left: 5px;\n"
-"}\n"
-"\n"
-"QLabel::hover {\n"
-"	color : #4F6FA0;\n"
-"}\n"
-"")
-
-        self.gridLayout_19.addWidget(self.labelInterest, 1, 0, 1, 1)
-
         self.listViewInterest = QListView(self.frameInterestContent)
         self.listViewInterest.setObjectName(u"listViewInterest")
         self.listViewInterest.setStyleSheet(u"QListView {\n"
@@ -1165,57 +1316,31 @@ class MainWindowView(QtWidgets.QMainWindow):
 "	color : #4F6FA0;\n"
 "}")
         self.listViewInterest.setFrameShadow(QFrame.Plain)
+        self.listViewInterest.setDragEnabled(True)
+        self.listViewInterest.setDragDropMode(QAbstractItemView.DragDrop)
+        self.listViewInterest.setDefaultDropAction(Qt.MoveAction)
         self.listViewInterest.setResizeMode(QListView.Fixed)
         self.listViewInterest.setLayoutMode(QListView.SinglePass)
         self.listViewInterest.setItemAlignment(Qt.AlignLeading)
 
-        self.gridLayout_19.addWidget(self.listViewInterest, 3, 0, 1, 1)
-
-        self.verticalSpacer_12 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Fixed)
-
-        self.gridLayout_19.addItem(self.verticalSpacer_12, 0, 0, 1, 1)
+        self.gridLayout_19.addWidget(self.listViewInterest, 6, 0, 1, 1)
 
         self.verticalSpacer_13 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Fixed)
 
-        self.gridLayout_19.addItem(self.verticalSpacer_13, 2, 0, 1, 1)
+        self.gridLayout_19.addItem(self.verticalSpacer_13, 5, 0, 1, 1)
 
+        self.verticalSpacer_31 = QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Fixed)
 
-        self.gridLayout_18.addWidget(self.frameInterestContent, 0, 0, 1, 1)
+        self.gridLayout_19.addItem(self.verticalSpacer_31, 1, 0, 1, 1)
 
-        self.stackedWidgetContainer.addWidget(self.widgetInterest)
-
-        self.gridLayout_2.addWidget(self.stackedWidgetContainer, 0, 0, 1, 1)
-
-
-        self.gridLayout.addWidget(self.frameContainer, 1, 0, 1, 1)
-
-        self.frameWindowTitleBar = QFrame(self.centralwidget)
-        self.frameWindowTitleBar.setObjectName(u"frameWindowTitleBar")
-        self.frameWindowTitleBar.setMaximumSize(QSize(16777215, 46))
-        self.frameWindowTitleBar.setStyleSheet(u"QFrame {\n"
-"\n"
-"	background-color : #000000;\n"
-"\n"
-"}")
-        self.frameWindowTitleBar.setFrameShape(QFrame.NoFrame)
-        self.frameWindowTitleBar.setFrameShadow(QFrame.Plain)
-        self.frameWindowTitleBar.setLineWidth(0)
-        self.gridLayout_3 = QGridLayout(self.frameWindowTitleBar)
-        self.gridLayout_3.setSpacing(0)
-        self.gridLayout_3.setObjectName(u"gridLayout_3")
-        self.gridLayout_3.setContentsMargins(0, 0, 0, 0)
-        self.horizontalSpacer_2 = QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
-
-        self.gridLayout_3.addItem(self.horizontalSpacer_2, 0, 1, 1, 1)
-
-        self.labelWindowTitle = QLabel(self.frameWindowTitleBar)
-        self.labelWindowTitle.setObjectName(u"labelWindowTitle")
-        self.labelWindowTitle.setStyleSheet(u"QLabel {\n"
-"	font : 77 15pt \"Microsoft JhengHei UI\";\n"
+        self.labelInterest = QLabel(self.frameInterestContent)
+        self.labelInterest.setObjectName(u"labelInterest")
+        self.labelInterest.setStyleSheet(u"QLabel {\n"
+"	font : 77 18pt \"Microsoft JhengHei UI\";\n"
 "	color : #FFFFFF;\n"
 "	border-radius : 0px;\n"
 "	text-align : left;\n"
-"	padding-left: 5px;\n"
+"	padding-right: 5px;\n"
 "}\n"
 "\n"
 "QLabel::hover {\n"
@@ -1223,83 +1348,1044 @@ class MainWindowView(QtWidgets.QMainWindow):
 "}\n"
 "")
 
-        self.gridLayout_3.addWidget(self.labelWindowTitle, 0, 0, 1, 1)
+        self.gridLayout_19.addWidget(self.labelInterest, 3, 0, 1, 1, Qt.AlignRight)
 
-        self.framePushButtonWindowPanel = QFrame(self.frameWindowTitleBar)
-        self.framePushButtonWindowPanel.setObjectName(u"framePushButtonWindowPanel")
-        self.framePushButtonWindowPanel.setFrameShape(QFrame.NoFrame)
-        self.framePushButtonWindowPanel.setFrameShadow(QFrame.Plain)
-        self.framePushButtonWindowPanel.setLineWidth(0)
-        self.gridLayout_8 = QGridLayout(self.framePushButtonWindowPanel)
-        self.gridLayout_8.setSpacing(0)
-        self.gridLayout_8.setObjectName(u"gridLayout_8")
-        self.gridLayout_8.setContentsMargins(0, 0, 0, 0)
-        self.pushButtonRestore = QPushButton(self.framePushButtonWindowPanel)
-        self.pushButtonRestore.setObjectName(u"pushButtonRestore")
-        self.pushButtonRestore.setMinimumSize(QSize(42, 42))
-        self.pushButtonRestore.setMaximumSize(QSize(42, 42))
-        self.pushButtonRestore.setStyleSheet(u"QPushButton {\n"
-"	background-color : #000000;\n"
+        self.pushButton_3 = QPushButton(self.frameInterestContent)
+        self.pushButton_3.setObjectName(u"pushButton_3")
+        self.pushButton_3.setMinimumSize(QSize(42, 42))
+        self.pushButton_3.setMaximumSize(QSize(42, 42))
+        self.pushButton_3.setStyleSheet(u"QPushButton{\n"
+"	background-color: #000000;\n"
+"\n"
+"	border-top-left-radius: 14px;\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	padding : 10px;\n"
+"\n"
+"	text-align : left;\n"
 "}\n"
 "\n"
-"QPushButton:hover {\n"
-"	background-color : #555555;\n"
+"QPushButton:hover{\n"
+"	background-color: #222222;\n"
+"	border-top-left-radius: 14px;	\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	text-align : left;\n"
+"\n"
 "}")
-        icon10 = QIcon()
-        icon10.addFile(u"app/resources/img/icons/24x24/cil-window-maximize.png", QSize(), QIcon.Normal, QIcon.Off)
-        self.pushButtonRestore.setIcon(icon10)
-        self.pushButtonRestore.setIconSize(QSize(18, 18))
+        self.pushButton_3.setIcon(icon15)
+        self.pushButton_3.setIconSize(QSize(24, 24))
 
-        self.gridLayout_8.addWidget(self.pushButtonRestore, 0, 2, 1, 1)
+        self.gridLayout_19.addWidget(self.pushButton_3, 2, 0, 1, 1)
 
-        self.pushButtonMinimize = QPushButton(self.framePushButtonWindowPanel)
-        self.pushButtonMinimize.setObjectName(u"pushButtonMinimize")
-        self.pushButtonMinimize.setMinimumSize(QSize(42, 42))
-        self.pushButtonMinimize.setMaximumSize(QSize(42, 42))
-        self.pushButtonMinimize.setStyleSheet(u"QPushButton {\n"
-"	background-color : #000000;\n"
+
+        self.gridLayout_18.addWidget(self.frameInterestContent, 0, 0, 1, 1)
+
+        self.stackedWidgetContainer.addWidget(self.widgetInterest)
+        self.widgetArtists = QWidget()
+        self.widgetArtists.setObjectName(u"widgetArtists")
+        self.widgetArtists.setStyleSheet(u"QWidget {\n"
+"\n"
+"	background-color : #111111;\n"
+"\n"
+"}")
+        self.gridLayout_21 = QGridLayout(self.widgetArtists)
+        self.gridLayout_21.setSpacing(0)
+        self.gridLayout_21.setObjectName(u"gridLayout_21")
+        self.gridLayout_21.setContentsMargins(0, 0, 0, 0)
+        self.frameArtistsContent = QFrame(self.widgetArtists)
+        self.frameArtistsContent.setObjectName(u"frameArtistsContent")
+        self.frameArtistsContent.setStyleSheet(u"QFrame {\n"
+"\n"
+"	background-color : #111111;\n"
+"}")
+        self.frameArtistsContent.setFrameShape(QFrame.NoFrame)
+        self.frameArtistsContent.setFrameShadow(QFrame.Plain)
+        self.frameArtistsContent.setLineWidth(0)
+        self.gridLayout_20 = QGridLayout(self.frameArtistsContent)
+        self.gridLayout_20.setSpacing(0)
+        self.gridLayout_20.setObjectName(u"gridLayout_20")
+        self.gridLayout_20.setContentsMargins(0, 0, 0, 0)
+        self.verticalSpacer_20 = QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Fixed)
+
+        self.gridLayout_20.addItem(self.verticalSpacer_20, 0, 0, 1, 1)
+
+        self.listViewArtists = QListView(self.frameArtistsContent)
+        self.listViewArtists.setObjectName(u"listViewArtists")
+        self.listViewArtists.setStyleSheet(u"QListView {\n"
+"	font : 77 13pt \"Microsoft JhengHei UI\";\n"
+"	color : #FFFFFF;\n"
+"	border-radius : 0px;\n"
+"	text-align : left;\n"
+"	padding-left: 5px;\n"
 "}\n"
 "\n"
-"QPushButton:hover {\n"
-"	background-color : #555555;\n"
+"QListView::hover {\n"
+"	color : #4F6FA0;\n"
 "}")
-        icon11 = QIcon()
-        icon11.addFile(u"app/resources/img/icons/24x24/cil-window-minimize.png", QSize(), QIcon.Normal, QIcon.Off)
-        self.pushButtonMinimize.setIcon(icon11)
-        self.pushButtonMinimize.setIconSize(QSize(18, 18))
+        self.listViewArtists.setFrameShadow(QFrame.Plain)
+        self.listViewArtists.setDragEnabled(True)
+        self.listViewArtists.setDragDropMode(QAbstractItemView.DragDrop)
+        self.listViewArtists.setDefaultDropAction(Qt.MoveAction)
+        self.listViewArtists.setResizeMode(QListView.Fixed)
+        self.listViewArtists.setLayoutMode(QListView.SinglePass)
+        self.listViewArtists.setItemAlignment(Qt.AlignLeading)
 
-        self.gridLayout_8.addWidget(self.pushButtonMinimize, 0, 0, 1, 1)
+        self.gridLayout_20.addWidget(self.listViewArtists, 4, 0, 1, 1)
 
-        self.pushButtonClose = QPushButton(self.framePushButtonWindowPanel)
-        self.pushButtonClose.setObjectName(u"pushButtonClose")
-        self.pushButtonClose.setMinimumSize(QSize(42, 42))
-        self.pushButtonClose.setMaximumSize(QSize(42, 42))
-        self.pushButtonClose.setStyleSheet(u"QPushButton {\n"
-"	background-color : #A93226;\n"
+        self.verticalSpacer_21 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Fixed)
+
+        self.gridLayout_20.addItem(self.verticalSpacer_21, 3, 0, 1, 1)
+
+        self.labelArtists = QLabel(self.frameArtistsContent)
+        self.labelArtists.setObjectName(u"labelArtists")
+        self.labelArtists.setStyleSheet(u"QLabel {\n"
+"	font : 77 18pt \"Microsoft JhengHei UI\";\n"
+"	color : #FFFFFF;\n"
+"	border-radius : 0px;\n"
+"	text-align : left;\n"
+"	padding-right: 5px;\n"
 "}\n"
 "\n"
-"QPushButton::hover {\n"
-"	background-color : #87281E\n"
+"QLabel::hover {\n"
+"	color : #4F6FA0;\n"
+"}\n"
+"")
+
+        self.gridLayout_20.addWidget(self.labelArtists, 2, 0, 1, 1, Qt.AlignRight)
+
+        self.pushButton_4 = QPushButton(self.frameArtistsContent)
+        self.pushButton_4.setObjectName(u"pushButton_4")
+        self.pushButton_4.setMinimumSize(QSize(42, 42))
+        self.pushButton_4.setMaximumSize(QSize(42, 42))
+        self.pushButton_4.setStyleSheet(u"QPushButton{\n"
+"	background-color: #000000;\n"
+"\n"
+"	border-top-left-radius: 14px;\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	padding : 10px;\n"
+"\n"
+"	text-align : left;\n"
+"}\n"
+"\n"
+"QPushButton:hover{\n"
+"	background-color: #222222;\n"
+"	border-top-left-radius: 14px;	\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	text-align : left;\n"
+"\n"
 "}")
-        icon12 = QIcon()
-        icon12.addFile(u"app/resources/img/icons/24x24/cil-x.png", QSize(), QIcon.Normal, QIcon.Off)
-        self.pushButtonClose.setIcon(icon12)
-        self.pushButtonClose.setIconSize(QSize(18, 18))
-        self.pushButtonClose.setFlat(False)
+        self.pushButton_4.setIcon(icon15)
+        self.pushButton_4.setIconSize(QSize(24, 24))
 
-        self.gridLayout_8.addWidget(self.pushButtonClose, 0, 3, 1, 1)
+        self.gridLayout_20.addWidget(self.pushButton_4, 1, 0, 1, 1)
 
 
-        self.gridLayout_3.addWidget(self.framePushButtonWindowPanel, 0, 2, 1, 1)
+        self.gridLayout_21.addWidget(self.frameArtistsContent, 0, 0, 1, 1)
+
+        self.stackedWidgetContainer.addWidget(self.widgetArtists)
+        self.widgetAlbum = QWidget()
+        self.widgetAlbum.setObjectName(u"widgetAlbum")
+        self.widgetAlbum.setStyleSheet(u"QWidget {\n"
+"\n"
+"	background-color : #111111;\n"
+"\n"
+"}")
+        self.gridLayout_23 = QGridLayout(self.widgetAlbum)
+        self.gridLayout_23.setSpacing(0)
+        self.gridLayout_23.setObjectName(u"gridLayout_23")
+        self.gridLayout_23.setContentsMargins(0, 0, 0, 0)
+        self.frameAlbumContent = QFrame(self.widgetAlbum)
+        self.frameAlbumContent.setObjectName(u"frameAlbumContent")
+        self.frameAlbumContent.setStyleSheet(u"QFrame {\n"
+"\n"
+"	background-color : #111111;\n"
+"}")
+        self.frameAlbumContent.setFrameShape(QFrame.NoFrame)
+        self.frameAlbumContent.setFrameShadow(QFrame.Plain)
+        self.frameAlbumContent.setLineWidth(0)
+        self.gridLayout_22 = QGridLayout(self.frameAlbumContent)
+        self.gridLayout_22.setSpacing(0)
+        self.gridLayout_22.setObjectName(u"gridLayout_22")
+        self.gridLayout_22.setContentsMargins(0, 0, 0, 0)
+        self.frameAlbum = QFrame(self.frameAlbumContent)
+        self.frameAlbum.setObjectName(u"frameAlbum")
+        self.frameAlbum.setFrameShape(QFrame.StyledPanel)
+        self.frameAlbum.setFrameShadow(QFrame.Raised)
+        self.gridLayout_29 = QGridLayout(self.frameAlbum)
+        self.gridLayout_29.setObjectName(u"gridLayout_29")
+        self.verticalSpacer_7 = QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Fixed)
+
+        self.gridLayout_29.addItem(self.verticalSpacer_7, 6, 0, 1, 1)
+
+        self.verticalSpacer_17 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Fixed)
+
+        self.gridLayout_29.addItem(self.verticalSpacer_17, 4, 0, 1, 1)
+
+        self.listViewAlbumSongs = QListView(self.frameAlbum)
+        self.listViewAlbumSongs.setObjectName(u"listViewAlbumSongs")
+        self.listViewAlbumSongs.setFrameShape(QFrame.NoFrame)
+        self.listViewAlbumSongs.setFrameShadow(QFrame.Plain)
+        self.listViewAlbumSongs.setLineWidth(0)
+
+        self.gridLayout_29.addWidget(self.listViewAlbumSongs, 5, 0, 1, 1)
+
+        self.labelAlbumArtist = QLabel(self.frameAlbum)
+        self.labelAlbumArtist.setObjectName(u"labelAlbumArtist")
+        self.labelAlbumArtist.setStyleSheet(u"QLabel {\n"
+"	font : 77 15pt \"Microsoft JhengHei UI\";\n"
+"	color : #4F6FA0;\n"
+"	border-radius : 0px;\n"
+"	text-align : left;\n"
+"	padding-left: 5px;\n"
+"}\n"
+"\n"
+"")
+
+        self.gridLayout_29.addWidget(self.labelAlbumArtist, 3, 0, 1, 1, Qt.AlignHCenter)
+
+        self.labelAlbumCoverArt = QLabel(self.frameAlbum)
+        self.labelAlbumCoverArt.setObjectName(u"labelAlbumCoverArt")
+        self.labelAlbumCoverArt.setMinimumSize(QSize(300, 300))
+        self.labelAlbumCoverArt.setMaximumSize(QSize(300, 300))
+        self.labelAlbumCoverArt.setSizeIncrement(QSize(400, 400))
+        self.labelAlbumCoverArt.setPixmap(QPixmap(u"../img/default/cover-art.png"))
+        self.labelAlbumCoverArt.setScaledContents(True)
+
+        self.gridLayout_29.addWidget(self.labelAlbumCoverArt, 0, 0, 1, 1, Qt.AlignHCenter)
+
+        self.labelAlbumTitle = QLabel(self.frameAlbum)
+        self.labelAlbumTitle.setObjectName(u"labelAlbumTitle")
+        self.labelAlbumTitle.setStyleSheet(u"QLabel {\n"
+"	font : 77 20pt \"Microsoft JhengHei UI\";\n"
+"	color : #FFFFFF;\n"
+"	border-radius : 0px;\n"
+"	text-align : left;\n"
+"	padding-left: 5px;\n"
+"}")
+
+        self.gridLayout_29.addWidget(self.labelAlbumTitle, 2, 0, 1, 1, Qt.AlignHCenter)
+
+        self.verticalSpacer_19 = QSpacerItem(20, 30, QSizePolicy.Minimum, QSizePolicy.Fixed)
+
+        self.gridLayout_29.addItem(self.verticalSpacer_19, 1, 0, 1, 1)
 
 
-        self.gridLayout.addWidget(self.frameWindowTitleBar, 0, 0, 1, 1)
+        self.gridLayout_22.addWidget(self.frameAlbum, 4, 0, 1, 1)
+
+        self.verticalSpacer_23 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Fixed)
+
+        self.gridLayout_22.addItem(self.verticalSpacer_23, 3, 0, 1, 1)
+
+        self.verticalSpacer_22 = QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Fixed)
+
+        self.gridLayout_22.addItem(self.verticalSpacer_22, 0, 0, 1, 1)
+
+        self.labelAlbum = QLabel(self.frameAlbumContent)
+        self.labelAlbum.setObjectName(u"labelAlbum")
+        self.labelAlbum.setStyleSheet(u"QLabel {\n"
+"	font : 77 18pt \"Microsoft JhengHei UI\";\n"
+"	color : #FFFFFF;\n"
+"	border-radius : 0px;\n"
+"	text-align : left;\n"
+"	padding-right: 5px;\n"
+"}\n"
+"\n"
+"QLabel::hover {\n"
+"	color : #4F6FA0;\n"
+"}\n"
+"")
+
+        self.gridLayout_22.addWidget(self.labelAlbum, 2, 0, 1, 1, Qt.AlignRight)
+
+        self.pushButton_5 = QPushButton(self.frameAlbumContent)
+        self.pushButton_5.setObjectName(u"pushButton_5")
+        self.pushButton_5.setMinimumSize(QSize(42, 42))
+        self.pushButton_5.setMaximumSize(QSize(42, 42))
+        self.pushButton_5.setStyleSheet(u"QPushButton{\n"
+"	background-color: #000000;\n"
+"\n"
+"	border-top-left-radius: 14px;\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	padding : 10px;\n"
+"\n"
+"	text-align : left;\n"
+"}\n"
+"\n"
+"QPushButton:hover{\n"
+"	background-color: #222222;\n"
+"	border-top-left-radius: 14px;	\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	text-align : left;\n"
+"\n"
+"}")
+        self.pushButton_5.setIcon(icon15)
+        self.pushButton_5.setIconSize(QSize(24, 24))
+
+        self.gridLayout_22.addWidget(self.pushButton_5, 1, 0, 1, 1)
+
+
+        self.gridLayout_23.addWidget(self.frameAlbumContent, 0, 0, 1, 1)
+
+        self.stackedWidgetContainer.addWidget(self.widgetAlbum)
+        self.widgetSongs = QWidget()
+        self.widgetSongs.setObjectName(u"widgetSongs")
+        self.widgetSongs.setStyleSheet(u"QWidget {\n"
+"\n"
+"	background-color : #111111;\n"
+"\n"
+"}")
+        self.gridLayout_25 = QGridLayout(self.widgetSongs)
+        self.gridLayout_25.setSpacing(0)
+        self.gridLayout_25.setObjectName(u"gridLayout_25")
+        self.gridLayout_25.setContentsMargins(0, 0, 0, 0)
+        self.frameSongsContent = QFrame(self.widgetSongs)
+        self.frameSongsContent.setObjectName(u"frameSongsContent")
+        self.frameSongsContent.setStyleSheet(u"QFrame {\n"
+"\n"
+"	background-color : #111111;\n"
+"}")
+        self.frameSongsContent.setFrameShape(QFrame.NoFrame)
+        self.frameSongsContent.setFrameShadow(QFrame.Plain)
+        self.frameSongsContent.setLineWidth(0)
+        self.gridLayout_24 = QGridLayout(self.frameSongsContent)
+        self.gridLayout_24.setSpacing(0)
+        self.gridLayout_24.setObjectName(u"gridLayout_24")
+        self.gridLayout_24.setContentsMargins(0, 0, 0, 0)
+        self.listViewSongs = QListView(self.frameSongsContent)
+        self.listViewSongs.setObjectName(u"listViewSongs")
+        self.listViewSongs.setStyleSheet(u"QListView {\n"
+"	font : 77 13pt \"Microsoft JhengHei UI\";\n"
+"	color : #FFFFFF;\n"
+"	border-radius : 0px;\n"
+"	text-align : left;\n"
+"	padding-left: 5px;\n"
+"}\n"
+"\n"
+"QListView::hover {\n"
+"	color : #4F6FA0;\n"
+"}")
+        self.listViewSongs.setFrameShadow(QFrame.Plain)
+        self.listViewSongs.setDragEnabled(True)
+        self.listViewSongs.setDragDropMode(QAbstractItemView.DragDrop)
+        self.listViewSongs.setDefaultDropAction(Qt.MoveAction)
+        self.listViewSongs.setResizeMode(QListView.Fixed)
+        self.listViewSongs.setLayoutMode(QListView.SinglePass)
+        self.listViewSongs.setItemAlignment(Qt.AlignLeading)
+
+        self.gridLayout_24.addWidget(self.listViewSongs, 4, 0, 1, 1)
+
+        self.labelSongs = QLabel(self.frameSongsContent)
+        self.labelSongs.setObjectName(u"labelSongs")
+        self.labelSongs.setStyleSheet(u"QLabel {\n"
+"	font : 77 18pt \"Microsoft JhengHei UI\";\n"
+"	color : #FFFFFF;\n"
+"	border-radius : 0px;\n"
+"	text-align : left;\n"
+"	padding-right: 5px;\n"
+"}\n"
+"\n"
+"QLabel::hover {\n"
+"	color : #4F6FA0;\n"
+"}\n"
+"")
+
+        self.gridLayout_24.addWidget(self.labelSongs, 2, 0, 1, 1, Qt.AlignRight)
+
+        self.verticalSpacer_25 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Fixed)
+
+        self.gridLayout_24.addItem(self.verticalSpacer_25, 3, 0, 1, 1)
+
+        self.verticalSpacer_24 = QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Fixed)
+
+        self.gridLayout_24.addItem(self.verticalSpacer_24, 0, 0, 1, 1)
+
+        self.pushButton_6 = QPushButton(self.frameSongsContent)
+        self.pushButton_6.setObjectName(u"pushButton_6")
+        self.pushButton_6.setMinimumSize(QSize(42, 42))
+        self.pushButton_6.setMaximumSize(QSize(42, 42))
+        self.pushButton_6.setStyleSheet(u"QPushButton{\n"
+"	background-color: #000000;\n"
+"\n"
+"	border-top-left-radius: 14px;\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	padding : 10px;\n"
+"\n"
+"	text-align : left;\n"
+"}\n"
+"\n"
+"QPushButton:hover{\n"
+"	background-color: #222222;\n"
+"	border-top-left-radius: 14px;	\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	text-align : left;\n"
+"\n"
+"}")
+        self.pushButton_6.setIcon(icon15)
+        self.pushButton_6.setIconSize(QSize(24, 24))
+
+        self.gridLayout_24.addWidget(self.pushButton_6, 1, 0, 1, 1)
+
+
+        self.gridLayout_25.addWidget(self.frameSongsContent, 0, 0, 1, 1)
+
+        self.stackedWidgetContainer.addWidget(self.widgetSongs)
+        self.widgetSettings = QWidget()
+        self.widgetSettings.setObjectName(u"widgetSettings")
+        self.widgetSettings.setStyleSheet(u"QWidget {\n"
+"\n"
+"	background-color : #111111;\n"
+"\n"
+"}")
+        self.gridLayout_27 = QGridLayout(self.widgetSettings)
+        self.gridLayout_27.setSpacing(0)
+        self.gridLayout_27.setObjectName(u"gridLayout_27")
+        self.gridLayout_27.setContentsMargins(0, 0, 0, 0)
+        self.frameSettingsContent = QFrame(self.widgetSettings)
+        self.frameSettingsContent.setObjectName(u"frameSettingsContent")
+        self.frameSettingsContent.setStyleSheet(u"QFrame {\n"
+"\n"
+"	background-color : #111111;\n"
+"}")
+        self.frameSettingsContent.setFrameShape(QFrame.NoFrame)
+        self.frameSettingsContent.setFrameShadow(QFrame.Plain)
+        self.frameSettingsContent.setLineWidth(0)
+        self.gridLayout_26 = QGridLayout(self.frameSettingsContent)
+        self.gridLayout_26.setSpacing(0)
+        self.gridLayout_26.setObjectName(u"gridLayout_26")
+        self.gridLayout_26.setContentsMargins(0, 0, 0, 0)
+        self.groupBoxScanner = QGroupBox(self.frameSettingsContent)
+        self.groupBoxScanner.setObjectName(u"groupBoxScanner")
+        self.groupBoxScanner.setStyleSheet(u"QGroupBox {\n"
+"	font : 77 15pt \"Microsoft JhengHei UI\";\n"
+"	color : #FFFFFF;\n"
+"	border-radius : 0px;\n"
+"	text-align : left;\n"
+"	padding-left: 5px;\n"
+"}")
+        self.gridLayout_28 = QGridLayout(self.groupBoxScanner)
+        self.gridLayout_28.setObjectName(u"gridLayout_28")
+        self.labelPlatform = QLabel(self.groupBoxScanner)
+        self.labelPlatform.setObjectName(u"labelPlatform")
+        self.labelPlatform.setStyleSheet(u"QLabel {\n"
+"	font : 77 18pt \"Microsoft JhengHei UI\";\n"
+"	color : #4F6FA0;\n"
+"	border-radius : 0px;\n"
+"	text-align : left;\n"
+"	padding-left: 5px;\n"
+"}\n"
+"")
+
+        self.gridLayout_28.addWidget(self.labelPlatform, 13, 0, 1, 1)
+
+        self.lineEdit_7 = QLineEdit(self.groupBoxScanner)
+        self.lineEdit_7.setObjectName(u"lineEdit_7")
+        self.lineEdit_7.setStyleSheet(u"QLineEdit {\n"
+"	background-color: #222222;\n"
+"\n"
+"	border-top-left-radius: 14px;\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	padding : 10px;\n"
+"\n"
+"	text-align : left;\n"
+"}\n"
+"\n"
+"QLineEdit:hover{\n"
+"	background-color: #444444;\n"
+"	border-top-left-radius: 14px;	\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	text-align : left;\n"
+"}")
+
+        self.gridLayout_28.addWidget(self.lineEdit_7, 11, 1, 1, 1)
+
+        self.labelNode = QLabel(self.groupBoxScanner)
+        self.labelNode.setObjectName(u"labelNode")
+        self.labelNode.setStyleSheet(u"QLabel {\n"
+"	font : 77 18pt \"Microsoft JhengHei UI\";\n"
+"	color : #4F6FA0;\n"
+"	border-radius : 0px;\n"
+"	text-align : left;\n"
+"	padding-left: 5px;\n"
+"}\n"
+"")
+
+        self.gridLayout_28.addWidget(self.labelNode, 10, 0, 1, 1)
+
+        self.labelProcessor = QLabel(self.groupBoxScanner)
+        self.labelProcessor.setObjectName(u"labelProcessor")
+        self.labelProcessor.setStyleSheet(u"QLabel {\n"
+"	font : 77 18pt \"Microsoft JhengHei UI\";\n"
+"	color : #4F6FA0;\n"
+"	border-radius : 0px;\n"
+"	text-align : left;\n"
+"	padding-left: 5px;\n"
+"}\n"
+"")
+
+        self.gridLayout_28.addWidget(self.labelProcessor, 9, 0, 1, 1)
+
+        self.labelOS = QLabel(self.groupBoxScanner)
+        self.labelOS.setObjectName(u"labelOS")
+        self.labelOS.setStyleSheet(u"QLabel {\n"
+"	font : 77 18pt \"Microsoft JhengHei UI\";\n"
+"	color : #4F6FA0;\n"
+"	border-radius : 0px;\n"
+"	text-align : left;\n"
+"	padding-left: 5px;\n"
+"}\n"
+"")
+
+        self.gridLayout_28.addWidget(self.labelOS, 6, 0, 1, 1)
+
+        self.labelVersion = QLabel(self.groupBoxScanner)
+        self.labelVersion.setObjectName(u"labelVersion")
+        self.labelVersion.setStyleSheet(u"QLabel {\n"
+"	font : 77 18pt \"Microsoft JhengHei UI\";\n"
+"	color : #4F6FA0;\n"
+"	border-radius : 0px;\n"
+"	text-align : left;\n"
+"	padding-left: 5px;\n"
+"}\n"
+"")
+
+        self.gridLayout_28.addWidget(self.labelVersion, 8, 0, 1, 1)
+
+        self.verticalSpacer_29 = QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Fixed)
+
+        self.gridLayout_28.addItem(self.verticalSpacer_29, 3, 0, 1, 2)
+
+        self.lineEdit_5 = QLineEdit(self.groupBoxScanner)
+        self.lineEdit_5.setObjectName(u"lineEdit_5")
+        self.lineEdit_5.setStyleSheet(u"QLineEdit {\n"
+"	background-color: #222222;\n"
+"\n"
+"	border-top-left-radius: 14px;\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	padding : 10px;\n"
+"\n"
+"	text-align : left;\n"
+"}\n"
+"\n"
+"QLineEdit:hover{\n"
+"	background-color: #444444;\n"
+"	border-top-left-radius: 14px;	\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	text-align : left;\n"
+"}")
+
+        self.gridLayout_28.addWidget(self.lineEdit_5, 9, 1, 1, 1)
+
+        self.lineEdit_9 = QLineEdit(self.groupBoxScanner)
+        self.lineEdit_9.setObjectName(u"lineEdit_9")
+        self.lineEdit_9.setStyleSheet(u"QLineEdit {\n"
+"	background-color: #222222;\n"
+"\n"
+"	border-top-left-radius: 14px;\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	padding : 10px;\n"
+"\n"
+"	text-align : left;\n"
+"}\n"
+"\n"
+"QLineEdit:hover{\n"
+"	background-color: #444444;\n"
+"	border-top-left-radius: 14px;	\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	text-align : left;\n"
+"}")
+
+        self.gridLayout_28.addWidget(self.lineEdit_9, 13, 1, 1, 1)
+
+        self.lineEdit_3 = QLineEdit(self.groupBoxScanner)
+        self.lineEdit_3.setObjectName(u"lineEdit_3")
+        self.lineEdit_3.setStyleSheet(u"QLineEdit {\n"
+"	background-color: #222222;\n"
+"\n"
+"	border-top-left-radius: 14px;\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	padding : 10px;\n"
+"\n"
+"	text-align : left;\n"
+"}\n"
+"\n"
+"QLineEdit:hover{\n"
+"	background-color: #444444;\n"
+"	border-top-left-radius: 14px;	\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	text-align : left;\n"
+"}")
+
+        self.gridLayout_28.addWidget(self.lineEdit_3, 7, 1, 1, 1)
+
+        self.lineEdit_8 = QLineEdit(self.groupBoxScanner)
+        self.lineEdit_8.setObjectName(u"lineEdit_8")
+        self.lineEdit_8.setStyleSheet(u"QLineEdit {\n"
+"	background-color: #222222;\n"
+"\n"
+"	border-top-left-radius: 14px;\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	padding : 10px;\n"
+"\n"
+"	text-align : left;\n"
+"}\n"
+"\n"
+"QLineEdit:hover{\n"
+"	background-color: #444444;\n"
+"	border-top-left-radius: 14px;	\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	text-align : left;\n"
+"}")
+
+        self.gridLayout_28.addWidget(self.lineEdit_8, 12, 1, 1, 1)
+
+        self.lineEdit_4 = QLineEdit(self.groupBoxScanner)
+        self.lineEdit_4.setObjectName(u"lineEdit_4")
+        self.lineEdit_4.setStyleSheet(u"QLineEdit {\n"
+"	background-color: #222222;\n"
+"\n"
+"	border-top-left-radius: 14px;\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	padding : 10px;\n"
+"\n"
+"	text-align : left;\n"
+"}\n"
+"\n"
+"QLineEdit:hover{\n"
+"	background-color: #444444;\n"
+"	border-top-left-radius: 14px;	\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	text-align : left;\n"
+"}")
+
+        self.gridLayout_28.addWidget(self.lineEdit_4, 8, 1, 1, 1)
+
+        self.labelSystem = QLabel(self.groupBoxScanner)
+        self.labelSystem.setObjectName(u"labelSystem")
+        self.labelSystem.setStyleSheet(u"QLabel {\n"
+"	font : 77 18pt \"Microsoft JhengHei UI\";\n"
+"	color : #4F6FA0;\n"
+"	border-radius : 0px;\n"
+"	text-align : left;\n"
+"	padding-left: 5px;\n"
+"}\n"
+"")
+
+        self.gridLayout_28.addWidget(self.labelSystem, 7, 0, 1, 1)
+
+        self.lineEdit = QLineEdit(self.groupBoxScanner)
+        self.lineEdit.setObjectName(u"lineEdit")
+        self.lineEdit.setStyleSheet(u"QLineEdit {\n"
+"	background-color: #222222;\n"
+"\n"
+"	border-top-left-radius: 14px;\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	padding : 10px;\n"
+"\n"
+"	text-align : left;\n"
+"}\n"
+"\n"
+"QLineEdit:hover{\n"
+"	background-color: #444444;\n"
+"	border-top-left-radius: 14px;	\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	text-align : left;\n"
+"}")
+
+        self.gridLayout_28.addWidget(self.lineEdit, 6, 1, 1, 1)
+
+        self.pushButtonScanner = QPushButton(self.groupBoxScanner)
+        self.pushButtonScanner.setObjectName(u"pushButtonScanner")
+        self.pushButtonScanner.setStyleSheet(u"QPushButton{\n"
+"	background-color: #000000;\n"
+"\n"
+"	border-top-left-radius: 14px;\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	padding : 10px;\n"
+"\n"
+"	text-align : left;\n"
+"}\n"
+"\n"
+"QPushButton:hover{\n"
+"	background-color: #222222;\n"
+"	border-top-left-radius: 14px;	\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	text-align : left;\n"
+"\n"
+"}")
+        icon16 = QIcon()
+        icon16.addFile(u"app/resources/img/icons/24x24/cil-lightbulb.png", QSize(), QIcon.Normal, QIcon.Off)
+        self.pushButtonScanner.setIcon(icon16)
+        self.pushButtonScanner.setIconSize(QSize(24, 24))
+
+        self.gridLayout_28.addWidget(self.pushButtonScanner, 0, 0, 1, 2)
+
+        self.lineEdit_6 = QLineEdit(self.groupBoxScanner)
+        self.lineEdit_6.setObjectName(u"lineEdit_6")
+        self.lineEdit_6.setStyleSheet(u"QLineEdit {\n"
+"	background-color: #222222;\n"
+"\n"
+"	border-top-left-radius: 14px;\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	padding : 10px;\n"
+"\n"
+"	text-align : left;\n"
+"}\n"
+"\n"
+"QLineEdit:hover{\n"
+"	background-color: #444444;\n"
+"	border-top-left-radius: 14px;	\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	text-align : left;\n"
+"}")
+
+        self.gridLayout_28.addWidget(self.lineEdit_6, 10, 1, 1, 1)
+
+        self.labelUser = QLabel(self.groupBoxScanner)
+        self.labelUser.setObjectName(u"labelUser")
+        self.labelUser.setStyleSheet(u"QLabel {\n"
+"	font : 77 18pt \"Microsoft JhengHei UI\";\n"
+"	color : #4F6FA0;\n"
+"	border-radius : 0px;\n"
+"	text-align : left;\n"
+"	padding-left: 5px;\n"
+"}\n"
+"")
+
+        self.gridLayout_28.addWidget(self.labelUser, 5, 0, 1, 1)
+
+        self.verticalSpacer_28 = QSpacerItem(20, 20, QSizePolicy.Minimum, QSizePolicy.Fixed)
+
+        self.gridLayout_28.addItem(self.verticalSpacer_28, 1, 0, 1, 2)
+
+        self.labelArchitecture = QLabel(self.groupBoxScanner)
+        self.labelArchitecture.setObjectName(u"labelArchitecture")
+        self.labelArchitecture.setStyleSheet(u"QLabel {\n"
+"	font : 77 18pt \"Microsoft JhengHei UI\";\n"
+"	color : #4F6FA0;\n"
+"	border-radius : 0px;\n"
+"	text-align : left;\n"
+"	padding-left: 5px;\n"
+"}\n"
+"")
+
+        self.gridLayout_28.addWidget(self.labelArchitecture, 12, 0, 1, 1)
+
+        self.labelSession = QLabel(self.groupBoxScanner)
+        self.labelSession.setObjectName(u"labelSession")
+        self.labelSession.setStyleSheet(u"QLabel {\n"
+"	font : 77 18pt \"Microsoft JhengHei UI\";\n"
+"	color : #4F6FA0;\n"
+"	border-radius : 0px;\n"
+"	text-align : left;\n"
+"	padding-left: 5px;\n"
+"}\n"
+"")
+
+        self.gridLayout_28.addWidget(self.labelSession, 2, 0, 1, 1)
+
+        self.label_10 = QLabel(self.groupBoxScanner)
+        self.label_10.setObjectName(u"label_10")
+        self.label_10.setStyleSheet(u"QLabel {\n"
+"	font : 77 18pt \"Microsoft JhengHei UI\";\n"
+"	color : #FFFFFF;\n"
+"	border-radius : 0px;\n"
+"	text-align : left;\n"
+"	padding-left: 5px;\n"
+"}\n"
+"")
+
+        self.gridLayout_28.addWidget(self.label_10, 4, 0, 1, 1)
+
+        self.lineEditSession = QLineEdit(self.groupBoxScanner)
+        self.lineEditSession.setObjectName(u"lineEditSession")
+        self.lineEditSession.setStyleSheet(u"QLineEdit{\n"
+"	background-color: #222222;\n"
+"\n"
+"	border-top-left-radius: 14px;\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	padding : 10px;\n"
+"\n"
+"	text-align : left;\n"
+"}\n"
+"\n"
+"QLineEdit:hover{\n"
+"	background-color: #444444;\n"
+"	border-top-left-radius: 14px;	\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	text-align : left;\n"
+"\n"
+"}")
+
+        self.gridLayout_28.addWidget(self.lineEditSession, 2, 1, 1, 1)
+
+        self.verticalSpacer_27 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+
+        self.gridLayout_28.addItem(self.verticalSpacer_27, 14, 0, 1, 2)
+
+        self.lineEditUser = QLineEdit(self.groupBoxScanner)
+        self.lineEditUser.setObjectName(u"lineEditUser")
+        self.lineEditUser.setStyleSheet(u"QLineEdit {\n"
+"	background-color: #222222;\n"
+"\n"
+"	border-top-left-radius: 14px;\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	padding : 10px;\n"
+"\n"
+"	text-align : left;\n"
+"}\n"
+"\n"
+"QLineEdit:hover{\n"
+"	background-color: #444444;\n"
+"	border-top-left-radius: 14px;	\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	text-align : left;\n"
+"}")
+
+        self.gridLayout_28.addWidget(self.lineEditUser, 5, 1, 1, 1)
+
+        self.labelMachine = QLabel(self.groupBoxScanner)
+        self.labelMachine.setObjectName(u"labelMachine")
+        self.labelMachine.setStyleSheet(u"QLabel {\n"
+"	font : 77 18pt \"Microsoft JhengHei UI\";\n"
+"	color : #4F6FA0;\n"
+"	border-radius : 0px;\n"
+"	text-align : left;\n"
+"	padding-left: 5px;\n"
+"}\n"
+"")
+
+        self.gridLayout_28.addWidget(self.labelMachine, 11, 0, 1, 1)
+
+
+        self.gridLayout_26.addWidget(self.groupBoxScanner, 4, 0, 1, 1)
+
+        self.verticalSpacer_26 = QSpacerItem(20, 10, QSizePolicy.Minimum, QSizePolicy.Fixed)
+
+        self.gridLayout_26.addItem(self.verticalSpacer_26, 0, 0, 1, 1)
+
+        self.labelSettings = QLabel(self.frameSettingsContent)
+        self.labelSettings.setObjectName(u"labelSettings")
+        self.labelSettings.setStyleSheet(u"QLabel {\n"
+"	font : 77 18pt \"Microsoft JhengHei UI\";\n"
+"	color : #FFFFFF;\n"
+"	border-radius : 0px;\n"
+"	text-align : left;\n"
+"	padding-right: 5px;\n"
+"}\n"
+"\n"
+"QLabel::hover {\n"
+"	color : #4F6FA0;\n"
+"}\n"
+"")
+
+        self.gridLayout_26.addWidget(self.labelSettings, 2, 0, 1, 1, Qt.AlignRight)
+
+        self.verticalSpacer_30 = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Fixed)
+
+        self.gridLayout_26.addItem(self.verticalSpacer_30, 3, 0, 1, 1)
+
+        self.pushButton_7 = QPushButton(self.frameSettingsContent)
+        self.pushButton_7.setObjectName(u"pushButton_7")
+        self.pushButton_7.setMinimumSize(QSize(42, 42))
+        self.pushButton_7.setMaximumSize(QSize(42, 42))
+        self.pushButton_7.setStyleSheet(u"QPushButton{\n"
+"	background-color: #000000;\n"
+"\n"
+"	border-top-left-radius: 14px;\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	padding : 10px;\n"
+"\n"
+"	text-align : left;\n"
+"}\n"
+"\n"
+"QPushButton:hover{\n"
+"	background-color: #222222;\n"
+"	border-top-left-radius: 14px;	\n"
+"	border-bottom-left-radius: 14px;\n"
+"	border-top-right-radius: 14px;\n"
+"	border-bottom-right-radius: 14px;\n"
+"\n"
+"	font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+"	color: #FFFFFF;\n"
+"	text-align : left;\n"
+"\n"
+"}")
+        self.pushButton_7.setIcon(icon15)
+        self.pushButton_7.setIconSize(QSize(24, 24))
+
+        self.gridLayout_26.addWidget(self.pushButton_7, 1, 0, 1, 1)
+
+
+        self.gridLayout_27.addWidget(self.frameSettingsContent, 0, 0, 1, 1)
+
+        self.stackedWidgetContainer.addWidget(self.widgetSettings)
+
+        self.gridLayout_2.addWidget(self.stackedWidgetContainer, 0, 0, 1, 1)
+
+
+        self.gridLayout.addWidget(self.frameContainer, 1, 0, 1, 1)
+
+ 
 
         self.setCentralWidget(self.centralwidget)
 
         self.retranslateUi()
 
-        self.stackedWidgetContainer.setCurrentIndex(0)
+        self.stackedWidgetContainer.setCurrentIndex(4)
 
 
         QMetaObject.connectSlotsByName(self)
@@ -1320,20 +2406,48 @@ class MainWindowView(QtWidgets.QMainWindow):
         self.labelDuration.setText("")
         self.labelTime.setText("")
         self.labelCodec.setText("")
-        self.labelFileOptions.setText(QCoreApplication.translate("MainWindow", u"Archivo", None))
         self.labelPlaylist.setText(QCoreApplication.translate("MainWindow", u"Playlist", None))
-        self.pushButtonAddDirectory.setText(QCoreApplication.translate("MainWindow", u"Agregar carpeta", None))
-        self.pushButtonAddFile.setText(QCoreApplication.translate("MainWindow", u"Agregar archivo", None))
-        self.pushButtonFavorites.setText(QCoreApplication.translate("MainWindow", u"Favoritos", None))
-        self.pushButtonAddPath.setText(QCoreApplication.translate("MainWindow", u"Agregar ruta", None))
         self.pushButtonPlaylists.setText(QCoreApplication.translate("MainWindow", u"Playlists", None))
-        self.labelInterests.setText(QCoreApplication.translate("MainWindow", u"Interes", None))
-        self.pushButton.setText(QCoreApplication.translate("MainWindow", u"Guarda playlist actual", None))
+        self.labelMusic.setText(QCoreApplication.translate("MainWindow", u"Musica", None))
+        self.pushButtonAddPath.setText(QCoreApplication.translate("MainWindow", u"Agregar ruta", None))
+        self.pushButtonAlbums.setText(QCoreApplication.translate("MainWindow", u"Albumes", None))
+        self.pushButtonSongs.setText(QCoreApplication.translate("MainWindow", u"Canciones", None))
+        self.pushButtonAddDirectory.setText(QCoreApplication.translate("MainWindow", u"Agregar carpeta", None))
+        self.pushButtonArtists.setText(QCoreApplication.translate("MainWindow", u"Artistas", None))
+        self.labelFileOptions.setText(QCoreApplication.translate("MainWindow", u"Archivo", None))
+        self.pushButtonFavorites.setText(QCoreApplication.translate("MainWindow", u"Favoritos", None))
+        self.pushButtonAddFile.setText(QCoreApplication.translate("MainWindow", u"Agregar archivo", None))
+        self.pushButtonSaveActualPlaylist.setText(QCoreApplication.translate("MainWindow", u"Guarda playlist actual", None))
+        self.pushButtonSearch.setText(QCoreApplication.translate("MainWindow", u"Buscar", None))
+        self.pushButtonSettings.setText("")
+        self.pushButtonSong.setText(QCoreApplication.translate("MainWindow", u"PushButton", None))
         self.labelPlaylisr.setText(QCoreApplication.translate("MainWindow", u"Playlist", None))
+        self.pushButton.setText("")
         self.labelInterest.setText(QCoreApplication.translate("MainWindow", u"Favoritos", None))
-        self.labelWindowTitle.setText(QCoreApplication.translate("MainWindow", u"VZPlayer", None))
-        self.pushButtonRestore.setText("")
-        self.pushButtonMinimize.setText("")
-        self.pushButtonClose.setText("")
+        self.pushButton_3.setText(QCoreApplication.translate("MainWindow", u"PushButton", None))
+        self.labelArtists.setText(QCoreApplication.translate("MainWindow", u"Artistas", None))
+        self.pushButton_4.setText(QCoreApplication.translate("MainWindow", u"PushButton", None))
+        self.labelAlbumArtist.setText("")
+        self.labelAlbumCoverArt.setText("")
+        self.labelAlbumTitle.setText("")
+        self.labelAlbum.setText(QCoreApplication.translate("MainWindow", u"Album", None))
+        self.pushButton_5.setText(QCoreApplication.translate("MainWindow", u"PushButton", None))
+        self.labelSongs.setText(QCoreApplication.translate("MainWindow", u"Canciones", None))
+        self.pushButton_6.setText(QCoreApplication.translate("MainWindow", u"PushButton", None))
+        self.groupBoxScanner.setTitle("")
+        self.labelPlatform.setText(QCoreApplication.translate("MainWindow", u"Plataforma", None))
+        self.labelNode.setText(QCoreApplication.translate("MainWindow", u"Nodo", None))
+        self.labelProcessor.setText(QCoreApplication.translate("MainWindow", u"Procesador", None))
+        self.labelOS.setText(QCoreApplication.translate("MainWindow", u"Sistema Operativo", None))
+        self.labelVersion.setText(QCoreApplication.translate("MainWindow", u"Version", None))
+        self.labelSystem.setText(QCoreApplication.translate("MainWindow", u"Sistema", None))
+        self.pushButtonScanner.setText(QCoreApplication.translate("MainWindow", u"Escanear musica", None))
+        self.labelUser.setText(QCoreApplication.translate("MainWindow", u"Usuario", None))
+        self.labelArchitecture.setText(QCoreApplication.translate("MainWindow", u"Arquitectura", None))
+        self.labelSession.setText(QCoreApplication.translate("MainWindow", u"Sesion", None))
+        self.label_10.setText(QCoreApplication.translate("MainWindow", u"Sistema", None))
+        self.labelMachine.setText(QCoreApplication.translate("MainWindow", u"Maquina", None))
+        self.labelSettings.setText(QCoreApplication.translate("MainWindow", u"Ajustes", None))
+        self.pushButton_7.setText("")
     # retranslateUi
 

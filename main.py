@@ -5,10 +5,10 @@ import sys
 import os
 import shutil
 import logging
+import platform
 
-from PyQt5.QtWidgets import (
-    QApplication
-)
+
+
 
 from app.controllers.controller import (
     Controller
@@ -17,162 +17,163 @@ from app.controllers.controller import (
 
 
 
+def get_logger() -> logging.Logger:
 
-exceptions = []
+    global Logger
 
-qApp = QApplication(sys.argv)
+    Logger = logging.getLogger('Logger')
 
+    if platform.system() == 'Windows':
+        log_file = struct['app']['path']['log'] + '\\' + 'DEBUG.txt'
 
-def main():
-    
-    try:
-        controller = Controller()
-    
-    except Exception as exception:
-        exceptions.append(exception)
+    elif platform.system() == 'Linux':
+        log_file = struct['app']['path']['log'] + '/' + 'DEBUG.txt'
 
-
-
-
-    def app_structure() -> dict:
-
-        try:
-            if controller.Model.EnvironmentModel.attr['system']['os'] == 'Windows':
-                    
-                app_path =\
-                    os.getcwd() + '\\' + 'app'
-                    
-
-                controllers_path =\
-                    app_path + '\\' + 'controllers'
-
-
-                models_path =\
-                    app_path + '\\' + 'models'
-
-
-                views_path =\
-                    app_path + '\\' + 'views'
-
-
-                log_path =\
-                        app_path + '\\' + 'log'
-
-
-                log_file =\
-                    log_path + '\\' + 'DEBUG.txt'
-                
-            elif controller.Model.EnvironmentModel.attr['system']['os'] == 'Linux':
-                    
-                app_path =\
-                    os.getcwd() + '/' + 'app'
-                    
-
-                controllers_path =\
-                    app_path + '/' + 'controllers'
-
-
-                models_path =\
-                    app_path + '/' + 'models'
-                        
-
-                views_path =\
-                        app_path + '/' + 'views'
-                    
-
-                log_path =\
-                        app_path + '/' + 'log'
-                    
-
-                log_file =\
-                    log_path + '/' + 'DEBUG.txt'
-            
-            struct = {
-                'app' : {
-                    'path' : {
-                        'app'           : app_path,
-                        'controller'    : controllers_path,
-                        'model'         : models_path,
-                        'view'          : views_path,
-                        'log'           : log_file
-                    }
-                }
-            }
-
-            return struct
-        
-        except Exception as exception:
-            exceptions.append(exception)
-        
-
-    def clear_pycache(**struct) -> bool:
-
-        try:
-            
-                
-                
-            pycache = '__pycache__'
-                
-            if os.path.exists(struct['app']['path']['app']):
-                for obj in os.scandir(struct['app']['path']['controller']):
-                    if obj.name == pycache:
-                        shutil.rmtree(obj.path)
-                    
-                for obj in os.scandir(struct['app']['path']['model']):
-                    if obj.name == pycache:
-                        shutil.rmtree(obj.path)
-                            
-                for obj in os.scandir(struct['app']['path']['view']):
-                    if obj.name == pycache:
-                        shutil.rmtree(obj.path)
-            
-            return True
-                    
-        except Exception as exception:
-            exceptions.append(exception)
-
-            return False
-    
-
-    struct = app_structure()
-
-
-
-
-    logger = logging.getLogger('logger')
-    
     logging.basicConfig(
-        filename = struct['app']['path']['log'],
-        level = logging.DEBUG,
-        encoding = 'utf-8',
-        format = '%(asctime)s %(levelname)s %(module)s - %(funcName)s: %(message)s',
-        datefmt = '%Y-%m-%d %H:%M:%S',
+        filename=log_file,
+        level=logging.DEBUG,
+        encoding='utf-8',
+        format='%(asctime)s %(levelname)s %(module)s - %(funcName)s: %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S',
     )
 
-    log_formatter = logging.Formatter(fmt = '%(asctime)s %(levelname)s %(module)s - %(funcName)s: %(message)s', datefmt= '%Y-%m-%d %H:%M:%S')
-
+    log_formatter = logging.Formatter(
+        fmt='%(asctime)s %(levelname)s %(module)s - %(funcName)s: %(message)s', datefmt='%Y-%m-%d %H:%M:%S')
 
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.WARNING)
     console_handler.setFormatter(log_formatter)
 
-    logger.addHandler(console_handler)
-    
-    logger.debug('Logger instanciado.')
-                
+    Logger.addHandler(console_handler)
+
+    Logger.info('Logger instanciado.')
+
+    return Logger
 
 
+def get_app_structure() -> dict:
 
-    pycache = clear_pycache(**struct)
+    global struct
 
-    if pycache:
-        controller.set_logger(logger)
+    if platform.system() == 'Windows':
 
-        return controller.get_main_window()
+        app_path =\
+            os.getcwd() + '\\' + 'app'
 
+        controllers_path =\
+            app_path + '\\' + 'controllers'
+
+        models_path =\
+            app_path + '\\' + 'models'
+
+        views_path =\
+            app_path + '\\' + 'views'
+
+        log_path =\
+            app_path + '\\' + 'log'
+
+        log_file =\
+            log_path + '\\' + 'DEBUG.txt'
+
+    elif platform.system() == 'Linux':
+
+        app_path =\
+            os.getcwd() + '/' + 'app'
+
+        controllers_path =\
+            app_path + '/' + 'controllers'
+
+        models_path =\
+            app_path + '/' + 'models'
+
+        views_path =\
+            app_path + '/' + 'views'
+
+        log_path =\
+            app_path + '/' + 'log'
+
+        log_file =\
+            log_path + '/' + 'DEBUG.txt'
+
+    struct = {
+        'app': {
+            'path': {
+                'app': app_path,
+                'controller': controllers_path,
+                'model': models_path,
+                'view': views_path,
+                'log': log_path
+            }
+        }
+    }
+
+    for directory in struct['app']['path'].values():
+
+        if not os.path.exists(directory):
+            os.mkdir(directory)
+
+    return struct
+
+
+def get_controller(Logger) -> Controller:
+    try:
+        controller = Controller(Logger)
+
+        return controller
+
+    except Exception as exception:
+        Logger.warning(
+            f'Exception\t{exception}'
+        )
+
+
+def main():
+
+    struct = get_app_structure()
+
+    Logger = get_logger()
+
+    try:
+        def clear_pycache(**struct) -> bool:
+
+            try:
+
+                pycache = '__pycache__'
+
+                if os.path.exists(struct['app']['path']['app']):
+                    for obj in os.scandir(struct['app']['path']['controller']):
+                        if obj.name == pycache:
+                            shutil.rmtree(obj.path)
+
+                    for obj in os.scandir(struct['app']['path']['model']):
+                        if obj.name == pycache:
+                            shutil.rmtree(obj.path)
+
+                    for obj in os.scandir(struct['app']['path']['view']):
+                        if obj.name == pycache:
+                            shutil.rmtree(obj.path)
+
+                return True
+
+            except Exception as exception:
+                Logger.warning(
+                    msg=f'Exception\t{exception}'
+                )
+                return False
+
+        Controller = get_controller(Logger)
+
+        cleaner = clear_pycache(**struct)
+
+        if cleaner:
+            return Controller.execute()
+
+    except Exception as exception:
+
+        Logger.warning(
+            msg=f'Exception\t{exception}'
+        )
 
 
 if __name__ == '__main__':
-    main()
-
-    sys.exit(qApp.exec())
+    sys.exit(main())
