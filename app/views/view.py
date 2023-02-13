@@ -1,30 +1,59 @@
-
-from app.views.menu import (
-    MainWindowView
+from PyQt5 import (
+    QtCore,
+    QtGui,
+    QtWidgets,
+    QtMultimedia
+)
+    
+from app.views.modules import (
+    MainView,
+    ProgressView,
+    DataReceiverView
 )
 
-from app.views.progress import (
-    ProgressWindowView
-)
+from app.models.modules import PlayerModel
 
-from app.views.data_receiver import (
-    DataReceiverWindowView
-)
+scrollbar_stylesheet = '''
+    QScrollArea {
+        border: none;
+    }
 
-from app.views.message import (
-    MessageWindowView
-)
+    QScrollBar {
+        background: transparent;
+    }
 
+    QScrollBar:horizontal {
+        height: 13px;
+    }
 
-from app.models.playlist import PlayerModel
+    QScrollBar:vertical {
+        width: 13px;
+    }
 
+    QScrollBar::handle {
+        background: #61364F;
+    }
 
-from PyQt5.QtGui import *
-from PyQt5.QtCore import *
-from PyQt5.QtWidgets import *
+    QScrollBar::handle:horizontal {
+        height: 25px;
+        min-width: 10px;
+    }
 
-from PyQt5.QtMultimedia import *
-from PyQt5.QtMultimediaWidgets import *
+    QScrollBar::handle:vertical {
+        width: 25px;
+        min-height: 10px;
+    }
+
+    QScrollBar::add-line {
+        border: none;
+        background: none;
+    }
+
+    QScrollBar::sub-line {
+        border: none;
+        background: none;
+    }
+'''
 
 
 class View(object):
@@ -35,231 +64,1210 @@ class View(object):
 
         self.Controller = Controller
 
-        self.MainWindowView = MainWindowView(self.Controller)
-        self.ProgressWindowView = ProgressWindowView(self.Controller)
-        self.DataReceiverWindowView = DataReceiverWindowView(self.Controller)
-        self.MessageWindowView = MessageWindowView()
+        self.MainView = MainView(self.Controller)
+        self.ProgressView = ProgressView()
+        self.DataReceiverView = DataReceiverView()
 
     def get_main_view(self):
-        try:
-            self.Controller.Logger.debug(
-                msg='Iniciando los componentes graficos de la ventana principal...')
 
-            self.MainWindowView.setupUi()
+        self.MainView.setupUi()
+        
+        # Window titlebar
+        self.Controller.window_title_bar_restore(self.MainView)
 
-            self.Controller.Logger.info(
-                msg='Los componentes graficos han sido instanciados correctamente.')
 
-            self.Controller.Logger.debug(
-                msg='Iniciando las propiedades de la ventana principal...')
+        self.MainView.pushButtonCloseWindow.clicked.connect(
+                QtWidgets.qApp.quit)
 
-            self.MainWindowView.setWindowTitle('VZPlayer')
+        self.MainView.pushButtonMinimizeWindow.clicked.connect(
+                self.MainView.showMinimized)
 
-            self.MainWindowView.stackedWidgetContainer.setCurrentWidget(
-                self.MainWindowView.widgetMenu)
+        self.MainView.pushButtonRestoreWindow.clicked.connect(
+                lambda: self.Controller.window_status_restore(self.MainView))
 
-            self.MainWindowView.lineEditSearcher.setPlaceholderText(
-                'Busca algo')
-            '''self.MainWindowView.lineEditSearcher.textChanged.connect(
-                self.Controller.search)'''
 
-            self.MainWindowView.pushButtonSearch.clicked.connect(
-                self.Controller.search)
 
-            self.MainWindowView.pushButtonAddFavorite.clicked.connect(
-                self.Controller.add_favorite)
+        # Get library module
+        self.get_library_module()
+        
+        # Library functions
+        self.MainView.pushButtonPlaylists.clicked.connect(self.get_playlists_module)
+        self.MainView.pushButtonAddFile.clicked.connect(self.Controller.open_file)
+        self.MainView.pushButtonAddDirectory.clicked.connect(self.Controller.open_directory)
+        self.MainView.pushButtonFavorites.clicked.connect(self.get_favorites_module)
+        
+        
+        # Setup the media player
+        self.QMediaPlayer = QtMultimedia.QMediaPlayer()
+        self.QMediaPlayer.error.connect(self.Controller.exceptions)
+        self.QMediaPlayer.play()
+        
+        
+        # Setup the media playlist.
+        self.QMediaPlaylist = QtMultimedia.QMediaPlaylist()
+        
+        self.QMediaPlayer.setPlaylist(self.QMediaPlaylist)
+        self.QMediaPlayer.volumeChanged.connect(self.MainView.horizontalSliderVolume.setValue)
+        
+        self.MainView.horizontalSliderVolume.setValue(100)
 
-            self.player = QMediaPlayer()
+        self.MainView.horizontalSliderVolume.valueChanged.connect(self.QMediaPlayer.setVolume)
+        self.MainView.pushButtonVolume.clicked.connect(self.Controller.set_volume_state)
 
-            self.player.error.connect(self.Controller.exceptions)
-            self.player.play()
 
-            # Setup the playlist.
-            self.playlist = QMediaPlaylist()
-            self.player.setPlaylist(self.playlist)
+        # Player module
+        self.MainView.pushButtonPlay.pressed.connect(self.Controller.play_song)
+        self.MainView.pushButtonPrevious.pressed.connect(self.Controller.previous_song)
+        self.MainView.pushButtonNext.pressed.connect(self.Controller.next_song)
 
-            self.player.volumeChanged.connect(
-                self.MainWindowView.horizontalSliderVolume.setValue)
-            self.MainWindowView.horizontalSliderVolume.setValue(5)
-            self.MainWindowView.horizontalSliderVolume.valueChanged.connect(
-                self.player.setVolume)
-            self.MainWindowView.pushButtonVolume.clicked.connect(
-                self.Controller.handle_volume_state)
 
-            self.MainWindowView.pushButtonScanner.clicked.connect(
-                lambda: self.MainWindowView.stackedWidgetContainer.setCurrentWidget(self.MainWindowView.widgetMenu))
+        self.PlayerModel = PlayerModel(self.QMediaPlaylist)
+        self.MainView.listViewPlayer.setModel(self.PlayerModel)
+        self.MainView.listViewPlayer.doubleClicked.connect(self.Controller.play_song)
+        self.MainView.listViewPlayer.verticalScrollBar().setStyleSheet(scrollbar_stylesheet)
+        self.MainView.listViewPlayer.horizontalScrollBar().setStyleSheet(scrollbar_stylesheet)
 
-            self.MainWindowView.pushButtonMenu.clicked.connect(
-                lambda: self.MainWindowView.stackedWidgetContainer.setCurrentWidget(self.MainWindowView.widgetMenu))
-            self.MainWindowView.pushButtonMenu_2.clicked.connect(
-                lambda: self.MainWindowView.stackedWidgetContainer.setCurrentWidget(self.MainWindowView.widgetMenu))
-            self.MainWindowView.pushButtonMenu_3.clicked.connect(
-                lambda: self.MainWindowView.stackedWidgetContainer.setCurrentWidget(self.MainWindowView.widgetMenu))
-            self.MainWindowView.pushButtonMenu_4.clicked.connect(
-                lambda: self.MainWindowView.stackedWidgetContainer.setCurrentWidget(self.MainWindowView.widgetMenu))
-            self.MainWindowView.pushButtonMenu_5.clicked.connect(
-                lambda: self.MainWindowView.stackedWidgetContainer.setCurrentWidget(self.MainWindowView.widgetMenu))
 
-            self.MainWindowView.pushButtonSong.clicked.connect(
-                lambda: self.MainWindowView.stackedWidgetContainer.setCurrentWidget(self.MainWindowView.widgetPlayer))
-            self.MainWindowView.pushButtonSettings.clicked.connect(
-                lambda: self.MainWindowView.stackedWidgetContainer.setCurrentWidget(self.MainWindowView.widgetSettings))
+        self.MainView.listViewPlayer.setDragDropMode(QtWidgets.QAbstractItemView.InternalMove)
+        self.MainView.listViewPlayer.setDefaultDropAction(QtCore.Qt.MoveAction)
+        self.MainView.listViewPlayer.setAcceptDrops(True)
 
-            self.MainWindowView.pushButtonPlay.pressed.connect(
-                self.Controller.play_song)
-            self.MainWindowView.pushButtonPrevious.pressed.connect(
-                self.Controller.previous_song)
-            self.MainWindowView.pushButtonNext.pressed.connect(
-                self.Controller.next_song)
+        self.QMediaPlaylist.currentIndexChanged.connect(self.Controller.set_playlist_position)
 
-            self.PlayerModel = PlayerModel(self.playlist)
-            self.MainWindowView.listViewPlaylist.setModel(self.PlayerModel)
-            self.MainWindowView.listViewPlaylist.doubleClicked.connect(
-                self.Controller.play_song)
+        selection_model = self.MainView.listViewPlayer.selectionModel()
+        selection_model.selectionChanged.connect(self.Controller.set_playlist_selection)
 
-            self.MainWindowView.listViewPlaylist.setDragDropMode(
-                QAbstractItemView.InternalMove)
-            self.MainWindowView.listViewPlaylist.setDefaultDropAction(
-                Qt.MoveAction)
-            self.MainWindowView.listViewPlaylist.setAcceptDrops(True)
+        self.QMediaPlayer.durationChanged.connect(self.Controller.set_duration_update)
+        self.QMediaPlayer.positionChanged.connect(self.Controller.set_position_update)
 
-            self.playlist.currentIndexChanged.connect(
-                self.Controller.playlist_position_changed)
+        self.MainView.horizontalSliderTime.valueChanged.connect(self.QMediaPlayer.setPosition)
 
-            selection_model = self.MainWindowView.listViewPlaylist.selectionModel()
-            selection_model.selectionChanged.connect(
-                self.Controller.playlist_selection_changed)
 
-            self.player.durationChanged.connect(
-                self.Controller.update_duration)
-            self.player.positionChanged.connect(
-                self.Controller.update_position)
 
-            self.MainWindowView.horizontalSliderTime.valueChanged.connect(
-                self.player.setPosition)
+        self.MainView.pushButtonSaveActualPlaylist.clicked.connect(self.Controller.save_playlist)
 
-            self.MainWindowView.pushButtonAddFile.clicked.connect(
-                self.Controller.open_file)
-            self.MainWindowView.pushButtonAddDirectory.clicked.connect(
-                self.Controller.open_directory)
+        self.QMediaPlayer.stateChanged.connect(self.Controller.set_reproduction_state)
+        self.QMediaPlayer.metaDataChanged.connect(self.Controller.get_metadata)
+        
 
-            self.MainWindowView.pushButtonSaveActualPlaylist.clicked.connect(
-                self.Controller.save_playlist)
+        
+        self.MainView.listViewPlaylists.doubleClicked.connect(self.Controller.open_playlist)
+        self.MainView.listViewPlaylists.setEditTriggers(QtWidgets.QAbstractItemView.NoEditTriggers)
+        self.MainView.listViewPlaylists.setItemAlignment(QtCore.Qt.AlignLeft)
+        
+        
 
-            self.player.stateChanged.connect(
-                self.Controller.handle_reproduction_state)
-            self.player.metaDataChanged.connect(
-                self.Controller.meta_data_changed)
 
-            self.MainWindowView.pushButtonFavorites.clicked.connect(
-                lambda: self.MainWindowView.stackedWidgetContainer.setCurrentWidget(self.MainWindowView.widgetInterest))
-            self.MainWindowView.pushButtonPlaylists.clicked.connect(
-                self.Controller.get_playlists)
-            self.Controller.get_playlist()
 
-            self.MainWindowView.listViewPlaylists.doubleClicked.connect(
-                self.Controller.open_playlist)
-            self.MainWindowView.listViewPlaylists.setEditTriggers(
-                QAbstractItemView.NoEditTriggers)
 
-            self.Controller.Logger.info(
-                msg='Las propiedades han sido instanciadas en la ventana principal.')
 
-            self.Controller.Logger.debug(msg='Iniciando interfaz grafica...')
 
-            return self.MainWindowView.show()
 
-        except Exception as exception:
-            self.Controller.Logger.warning(
-                msg=f'Exception\t{exception}'
-            )
 
+
+
+
+
+
+
+
+
+        
+        self.MainView.radioButtonDarkMode.toggled.connect(self.mode)
+        self.MainView.radioButtonDarkMode.setChecked(True)
+        
+        self.MainView.radioButtonLightMode.toggled.connect(self.mode)
+        
+        
+        
+        self.MainView.pushButtonBack.clicked.connect(self.get_library_module)
+        self.MainView.pushButtonSettings.clicked.connect(self.get_settings_module)
+        self.MainView.pushButtonPlayer.clicked.connect(self.get_player_module)
+        self.MainView.pushButtonPlaylistPlayer.clicked.connect(self.get_playlists_module)
+        
+
+        return self.MainView.show()
+    
+    
     def get_progress_view(self):
+        
+        self.ProgressView.setupUi()
+        
+        return self.ProgressView.show()
+
+
+    def get_data_receiver_view(self, title: str):
 
         try:
 
-            self.Controller.Logger.debug(
-                msg='Iniciando los componentes graficos de la ventana de progreso...')
-            self.ProgressWindowView.setupUi()
+            self.DataReceiverView.setupUi()
 
-            self.Controller.Logger.info(
-                msg='Los componentes graficos han sido instanciados correctamente.')
+            self.DataReceiverView.setWindowTitle('Pandora : Data receiver')
+            self.DataReceiverView.set_title(title)
 
-            self.Controller.Logger.debug(
-                msg='Iniciando las propiedades de la ventana de progreso...')
-            self.ProgressWindowView.setWindowTitle('VZPlayer')
-            self.ProgressWindowView.setMaximumSize(800, 150)
-            self.ProgressWindowView.setMinimumSize(800, 150)
-            self.Controller.Logger.info(
-                msg='Las propiedades han sido instanciadas en la ventana de progreso.')
+            self.DataReceiverView.pushButtonConfirm.clicked.connect(self.Controller.set_confirmation)
 
-            self.Controller.Logger.debug(msg='Iniciando interfaz grafica...')
-
-            return self.ProgressWindowView.show()
+            return self.DataReceiverView.show()
 
         except Exception as exception:
-            self.Controller.Logger.warning(
-                msg=f'Exception\t{exception}'
-            )
+            print(exception)
 
-    def get_message_view(self, title: str, message: str, status: str):
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
+    
+    def get_library_module(self):
+        
+        self.MainView.pushButtonBack.setHidden(True)
+        self.MainView.pushButtonSettings.setHidden(False)
+        self.MainView.pushButtonPlayer.setHidden(False)
+        self.MainView.pushButtonPlaylistPlayer.setHidden(True)
+        
+        self.MainView.stackedWidgetContent.setCurrentWidget(self.MainView.libraryWidget)
+
+    
+    def get_player_module(self):
+
+        self.MainView.pushButtonBack.setHidden(False)
+        self.MainView.pushButtonSettings.setHidden(True)
+        self.MainView.pushButtonPlayer.setHidden(True)
+        self.MainView.pushButtonPlaylistPlayer.setHidden(False)
+        
+        return self.MainView.stackedWidgetContent.setCurrentWidget(self.MainView.playerWidget)
+    
+    
+    def get_settings_module(self):
+        self.MainView.pushButtonBack.setHidden(False)
+        self.MainView.pushButtonSettings.setHidden(True)
+        self.MainView.pushButtonPlayer.setHidden(True)
+        self.MainView.pushButtonPlaylistPlayer.setHidden(True)
+        
+        return self.MainView.stackedWidgetContent.setCurrentWidget(self.MainView.settingsWidget)
+    
+
+    def get_playlists_module(self):
         try:
-            '''
-            STATUS >
-                        Question
-                        Information
-                        Warning
-                        Critical
-            '''
-
-            self.Controller.Logger.debug(
-                msg='Iniciando las propiedades de la ventana de mensaje...')
-            self.MessageWindowView.set_title(title)
-            self.MessageWindowView.set_status(status)
-            self.MessageWindowView.set_message(message)
-            self.Controller.Logger.info(
-                msg='Las propiedades han sido instanciadas en la ventana de mensaje.')
-
-            self.Controller.Logger.debug(
-                msg='Iniciando los componentes graficos de la ventana de mensaje...')
-            self.MessageWindowView.setupUi()
-            self.Controller.Logger.info(
-                msg='Los componentes graficos han sido instanciados correctamente.')
-
-            self.Controller.Logger.debug(msg='Iniciando interfaz grafica...')
-
-            return self.MessageWindowView.show()
-
+            self.Controller.get_playlist()
         except Exception as exception:
-            self.Controller.Logger.warning(
-                msg=f'Exception\t{exception}'
-            )
+            print(exception)
 
-    def get_data_receiver_window_view(self, title: str):
+        self.MainView.pushButtonBack.setHidden(False)
+        self.MainView.pushButtonSettings.setHidden(True)
+        self.MainView.pushButtonPlayer.setHidden(False)
+        self.MainView.pushButtonPlaylistPlayer.setHidden(True)
+        
+        return self.MainView.stackedWidgetContent.setCurrentWidget(self.MainView.playlistsWidget)
 
-        try:
 
-            self.Controller.Logger.debug(
-                msg='Iniciando los componentes graficos de la ventana de solicitud...')
-            self.DataReceiverWindowView.setupUi()
-            self.Controller.Logger.info(
-                msg='Los componentes graficos han sido instanciados correctamente.')
+    def get_favorites_module(self):
+        self.MainView.pushButtonBack.setHidden(False)
+        self.MainView.pushButtonSettings.setHidden(True)
+        self.MainView.pushButtonPlayer.setHidden(False)
+        self.MainView.pushButtonPlaylistPlayer.setHidden(True)
+        
+        return self.MainView.stackedWidgetContent.setCurrentWidget(self.MainView.favoritesWidget)
 
-            self.Controller.Logger.debug(
-                msg='Iniciando las propiedades de la ventana de solicitud...')
-            self.DataReceiverWindowView.setWindowTitle('VZPlayer')
-            self.DataReceiverWindowView.set_title(title)
-            self.Controller.Logger.info(
-                msg='Las propiedades han sido instanciadas en la ventana de solicitud.')
 
-            self.DataReceiverWindowView.pushButtonConfirm.clicked.connect(
-                self.Controller.confirm_data)
 
-            self.Controller.Logger.debug(msg='Iniciando interfaz grafica...')
+    def mode(self):
+        if self.MainView.radioButtonLightMode.isChecked():
+            
+            self.MainView.frameContainer.setStyleSheet('QFrame { background-color: #FFFFFF;}')
 
-            return self.DataReceiverWindowView.show()
 
-        except Exception as exception:
-            self.Controller.Logger.warning(
-                msg=f'Exception\t{exception}'
-            )
+            self.MainView.labelWindowTitleBar.setStyleSheet("QLabel {\n"
+                                                "    font : 77 15pt \"Microsoft JhengHei UI\";\n"
+                                                "    color : #46355e;\n"
+                                                "    border-radius : 0px;\n"
+                                                "    text-align : left;\n"
+                                                "    padding-left: 5px;\n"
+                                                "}\n"
+                                                "\n"
+                                                "QLabel::hover {\n"
+                                                "    color : #4F6FA0;\n"
+                                                "}\n"
+                                                "")
+
+
+
+            
+            self.MainView.pushButtonBack.setStyleSheet("QPushButton{\n"
+                                          "    background-color: #46355e;\n"
+                                          "    border-radius : 14px;\n"
+                                          "    font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+                                          "    color: #FFFFFF;\n"
+                                          "    padding : 10px;\n"
+                                          "\n"
+                                          "    text-align : left;\n"
+                                          "}\n"
+                                          "\n"
+                                          "QPushButton:hover{\n"
+                                          "    background-color: #252525;\n"
+                                          "}")
+
+            self.MainView.pushButtonSettings.setStyleSheet("QPushButton{\n"
+                                          "    background-color: #46355e;\n"
+                                          "    border-radius : 14px;\n"
+                                          "    font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+                                          "    color: #FFFFFF;\n"
+                                          "    padding : 10px;\n"
+                                          "\n"
+                                          "    text-align : left;\n"
+                                          "}\n"
+                                          "\n"
+                                          "QPushButton:hover{\n"
+                                          "    background-color: #252525;\n"
+                                          "}")
+
+            self.MainView.pushButtonPlayer.setStyleSheet("QPushButton{\n"
+                                          "    background-color: #46355e;\n"
+                                          "    border-radius : 14px;\n"
+                                          "    font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+                                          "    color: #FFFFFF;\n"
+                                          "    padding : 10px;\n"
+                                          "\n"
+                                          "    text-align : left;\n"
+                                          "}\n"
+                                          "\n"
+                                          "QPushButton:hover{\n"
+                                          "    background-color: #252525;\n"
+                                          "}")
+
+            self.MainView.pushButtonPlaylistPlayer.setStyleSheet("QPushButton{\n"
+                                          "    background-color: #46355e;\n"
+                                          "    border-radius : 14px;\n"
+                                          "    font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+                                          "    color: #FFFFFF;\n"
+                                          "    padding : 10px;\n"
+                                          "\n"
+                                          "    text-align : left;\n"
+                                          "}\n"
+                                          "\n"
+                                          "QPushButton:hover{\n"
+                                          "    background-color: #252525;\n"
+                                          "}")
+
+
+
+            # Library
+            self.MainView.labelLibraryWidgetTitle.setStyleSheet("QLabel {\n"
+                                                  "    font : 77 18pt \"Microsoft JhengHei UI\";\n"
+                                                  "    color : #46355e;\n"
+                                                  "    border-radius : 0px;\n"
+                                                  "    text-align : left;\n"
+                                                  "    padding-left: 5px;\n"
+                                                  "}\n"
+                                                  "\n"
+                                                  "QLabel::hover {\n"
+                                                  "    color : #4F6FA0;\n"
+                                                  "}\n"
+                                                  "")
+            
+            self.MainView.labelLibraryFileTitle.setStyleSheet("QLabel {\n"
+                                                  "    font : 77 18pt \"Microsoft JhengHei UI\";\n"
+                                                  "    color : #46355e;\n"
+                                                  "    border-radius : 0px;\n"
+                                                  "    text-align : left;\n"
+                                                  "    padding-left: 5px;\n"
+                                                  "}\n"
+                                                  "\n"
+                                                  "QLabel::hover {\n"
+                                                  "    color : #4F6FA0;\n"
+                                                  "}\n"
+                                                  "")
+
+            self.MainView.labelLibraryMusicTitle.setStyleSheet("QLabel {\n"
+                                                  "    font : 77 18pt \"Microsoft JhengHei UI\";\n"
+                                                  "    color : #46355e;\n"
+                                                  "    border-radius : 0px;\n"
+                                                  "    text-align : left;\n"
+                                                  "    padding-left: 5px;\n"
+                                                  "}\n"
+                                                  "\n"
+                                                  "QLabel::hover {\n"
+                                                  "    color : #4F6FA0;\n"
+                                                  "}\n"
+                                                  "")
+            
+            
+            self.MainView.pushButtonAddDirectory.setStyleSheet("QPushButton{\n"
+                                               "    background-color: #5F3E77;\n"
+                                               "    border-radius : 14px;\n"
+                                               "    font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+                                               "    color: #FFFFFF;\n"
+                                               "    padding : 10px;\n"
+                                               "\n"
+                                               "    text-align : left;\n"
+                                               "}\n"
+                                               "\n"
+                                               "QPushButton:hover{\n"
+                                               "    background-color: #46355e;\n"
+                                               "}")
+            
+            self.MainView.pushButtonAddFile.setStyleSheet("QPushButton{\n"
+                                               "    background-color: #5F3E77;\n"
+                                               "    border-radius : 14px;\n"
+                                               "    font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+                                               "    color: #FFFFFF;\n"
+                                               "    padding : 10px;\n"
+                                               "\n"
+                                               "    text-align : left;\n"
+                                               "}\n"
+                                               "\n"
+                                               "QPushButton:hover{\n"
+                                               "    background-color: #46355e;\n"
+                                               "}")
+            
+            self.MainView.pushButtonAddPath.setStyleSheet("QPushButton{\n"
+                                               "    background-color: #5F3E77;\n"
+                                               "    border-radius : 14px;\n"
+                                               "    font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+                                               "    color: #FFFFFF;\n"
+                                               "    padding : 10px;\n"
+                                               "\n"
+                                               "    text-align : left;\n"
+                                               "}\n"
+                                               "\n"
+                                               "QPushButton:hover{\n"
+                                               "    background-color: #46355e;\n"
+                                               "}")
+            
+            self.MainView.pushButtonPlaylists.setStyleSheet("QPushButton{\n"
+                                               "    background-color: #5F3E77;\n"
+                                               "    border-radius : 14px;\n"
+                                               "    font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+                                               "    color: #FFFFFF;\n"
+                                               "    padding : 10px;\n"
+                                               "\n"
+                                               "    text-align : left;\n"
+                                               "}\n"
+                                               "\n"
+                                               "QPushButton:hover{\n"
+                                               "    background-color: #46355e;\n"
+                                               "}")
+
+            self.MainView.pushButtonFavorites.setStyleSheet("QPushButton{\n"
+                                               "    background-color: #5F3E77;\n"
+                                               "    border-radius : 14px;\n"
+                                               "    font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+                                               "    color: #FFFFFF;\n"
+                                               "    padding : 10px;\n"
+                                               "\n"
+                                               "    text-align : left;\n"
+                                               "}\n"
+                                               "\n"
+                                               "QPushButton:hover{\n"
+                                               "    background-color: #46355e;\n"
+                                               "}")
+            
+            
+            # Favorites
+            self.MainView.labelFavoriteWidgetTitle.setStyleSheet("QLabel {\n"
+                                                  "    font : 77 18pt \"Microsoft JhengHei UI\";\n"
+                                                  "    color : #46355e;\n"
+                                                  "    border-radius : 0px;\n"
+                                                  "    text-align : left;\n"
+                                                  "    padding-left: 5px;\n"
+                                                  "}\n"
+                                                  "\n"
+                                                  "QLabel::hover {\n"
+                                                  "    color : #4F6FA0;\n"
+                                                  "}\n"
+                                                  "")
+            
+            
+            # Playlists
+            self.MainView.labelPlaylistWidgetTitle.setStyleSheet("QLabel {\n"
+                                                  "    font : 77 18pt \"Microsoft JhengHei UI\";\n"
+                                                  "    color : #46355e;\n"
+                                                  "    border-radius : 0px;\n"
+                                                  "    text-align : left;\n"
+                                                  "    padding-left: 5px;\n"
+                                                  "}\n"
+                                                  "\n"
+                                                  "QLabel::hover {\n"
+                                                  "    color : #4F6FA0;\n"
+                                                  "}\n"
+                                                  "")
+
+
+            # Settings
+            self.MainView.labelSettingsWidgetTitle.setStyleSheet("QLabel {\n"
+                                                  "    font : 77 18pt \"Microsoft JhengHei UI\";\n"
+                                                  "    color : #46355e;\n"
+                                                  "    border-radius : 0px;\n"
+                                                  "    text-align : left;\n"
+                                                  "    padding-left: 5px;\n"
+                                                  "}\n"
+                                                  "\n"
+                                                  "QLabel::hover {\n"
+                                                  "    color : #4F6FA0;\n"
+                                                  "}\n"
+                                                  "")
+
+            self.MainView.labelSettingsModeTitle.setStyleSheet("QLabel {\n"
+                                                  "    font : 77 18pt \"Microsoft JhengHei UI\";\n"
+                                                  "    color : #46355e;\n"
+                                                  "    border-radius : 0px;\n"
+                                                  "    text-align : left;\n"
+                                                  "    padding-left: 5px;\n"
+                                                  "}\n"
+                                                  "\n"
+                                                  "QLabel::hover {\n"
+                                                  "    color : #4F6FA0;\n"
+                                                  "}\n"
+                                                  "")
+
+            self.MainView.radioButtonDarkMode.setStyleSheet("QRadioButton {\n"
+                                                                "    font : 75 11pt \"Microsoft JhengHei UI\"  bold;\n"
+                                                                "    color : #FFFFFF;\n"
+                                                                "    border-radius : 0px;\n"
+                                                                "}\n"
+                                                                "\n"
+                                                                "QRadioButton:hover {\n"
+                                                                "    color : #909090;\n"
+                                                                "    border-radius : 0px;\n"
+                                                                "}\n"
+                                                                "\n"
+                                                                "QRadioButton::checked {\n"
+                                                                "    color : #909090;\n"
+                                                                "    border-radius : 0px;\n"
+                                                                "}\n"
+                                                                "\n"
+                                                                "QRadioButton::indicator {\n"
+                                                                "    color : #909090;\n"
+                                                                "}\n"
+                                                                "\n"
+                                                                "QRadioButton::indicator:checked:pressed {\n"
+                                                                "    color : #909090;\n"
+                                                                "}")
+
+            self.MainView.radioButtonLightMode.setStyleSheet("QRadioButton {\n"
+                                                                 "    font : 75 11pt \"Microsoft JhengHei UI\"  bold;\n"
+                                                                 "    color : #FFFFFF;\n"
+                                                                 "    border-radius : 0px;\n"
+                                                                 "}\n"
+                                                                 "\n"
+                                                                 "QRadioButton:hover {\n"
+                                                                 "    color : #909090;\n"
+                                                                 "    border-radius : 0px;\n"
+                                                                 "}\n"
+                                                                 "\n"
+                                                                 "QRadioButton::checked {\n"
+                                                                 "    color : #909090;\n"
+                                                                 "    border-radius : 0px;\n"
+                                                                 "}\n"
+                                                                 "\n"
+                                                                 "QRadioButton::indicator {\n"
+                                                                 "    color : #909090;\n"
+                                                                 "}\n"
+                                                                 "\n"
+                                                                 "QRadioButton::indicator:checked:pressed {\n"
+                                                                 "    color : #909090;\n"
+                                                                 "}")
+
+
+            self.MainView.frameMode.setStyleSheet("QFrame {\n"
+                                            "    background-color: #46355e;\n"
+                                            "    border-radius : 40px;\n"
+                                            "}\n"
+                                            "\n"
+                                            "")
+            self.MainView.labelSettingsModeTitle.setStyleSheet("QLabel {\n"
+                                                  "    font : 77 18pt \"Microsoft JhengHei UI\";\n"
+                                                  "    color : #FFFFFF;\n"
+                                                  "    border-radius : 0px;\n"
+                                                  "    text-align : left;\n"
+                                                  "    padding-left: 5px;\n"
+                                                  "}\n"
+                                                  "\n"
+                                                  "QLabel::hover {\n"
+                                                  "    color : #909090;\n"
+                                                  "}\n"
+                                                  "")
+
+
+            # Player
+            self.MainView.labelAlbum.setStyleSheet("QLabel {\n"
+                                      "    font : 80 16pt \"Microsoft JhengHei UI\" bold;\n"
+                                      "    color : #46355e;\n"
+                                      "    border-radius : 0px;\n"
+                                      "    text-align : left;\n"
+                                      "    padding-left: 5px;\n"
+                                      "}\n"
+                                      "\n"
+                                      "QLabel::hover {\n"
+                                      "    color : #4F6FA0;\n"
+                                      "}\n"
+                                      "")
+            
+            #color : #46355e
+            
+            self.MainView.labelArtist.setStyleSheet("QLabel {\n"
+                                       "    font : 80 13pt \"Microsoft JhengHei UI\" bold;\n"
+                                       "    color : #46355e;\n"
+                                       "    border-radius : 0px;\n"
+                                       "    text-align : left;\n"
+                                       "    padding-left: 5px;\n"
+                                       "}\n"
+                                       "\n"
+                                       "QLabel::hover {\n"
+                                       "    color : #4F6FA0;\n"
+                                       "}\n"
+                                       "")
+
+            self.MainView.labelTitle.setStyleSheet("QLabel {\n"
+                                      "    font : 77 18pt \"Microsoft JhengHei UI\";\n"
+                                      "    color : #46355e;\n"
+                                      "    border-radius : 0px;\n"
+                                      "    text-align : left;\n"
+                                      "    padding-left: 5px;\n"
+                                      "}\n"
+                                      "\n"
+                                      "QLabel::hover {\n"
+                                      "    color : #4F6FA0;\n"
+                                      "}\n"
+                                      "")
+            
+            self.MainView.labelCodec.setStyleSheet("QLabel {\n"
+                                      "    font : 22 9pt \"Microsoft JhengHei UI\" bold;\n"
+                                      "    color : #46355e;\n"
+                                      "    border-radius : 0px;\n"
+                                      "    text-align : left;\n"
+                                      "    padding-left: 5px;\n"
+                                      "}")
+        
+
+            self.MainView.labelBitrate.setStyleSheet("QLabel {\n"
+                                        "    font : 22 11pt \"Microsoft JhengHei UI\" bold;\n"
+                                        "    color : #46355e;\n"
+                                        "    border-radius : 0px;\n"
+                                        "    text-align : left;\n"
+                                        "    padding-left: 5px;\n"
+                                        "}")
+            
+            self.MainView.labelDurationTime.setStyleSheet("QLabel {\n"
+                                             "    font : 80 8pt \"Microsoft JhengHei UI\" bold;\n"
+                                             "    color : #46355e;\n"
+                                             "    border-radius : 0px;\n"
+                                             "    text-align : left;\n"
+                                             "    padding-left: 5px;\n"
+                                             "}")
+            
+            self.MainView.labelCurrentTime.setStyleSheet("QLabel {\n"
+                                            "    font : 80 8pt \"Microsoft JhengHei UI\" bold;\n"
+                                            "    color : #46355e;\n"
+                                            "    border-radius : 0px;\n"
+                                            "    text-align : left;\n"
+                                            "    padding-left: 5px;\n"
+                                            "}")
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            
+            self.MainView.pushButtonPlay.setStyleSheet("QPushButton {\n"
+                                          "    background: #202020;\n"
+                                          "    color: #333333;\n"
+                                          "    border: 2px solid #202020;\n"
+                                          "    border-radius: 20px;\n"
+                                          "    padding: 5px;\n"
+                                          "}\n"
+                                          "\n"
+                                          "QPushButton:hover {\n"
+                                          "    background: #505050;\n"
+                                          "}\n"
+                                          "\n"
+                                          "QPushButton:pressed {\n"
+                                          "    border-style: inset;\n"
+                                          "    background: #808080;\n"
+                                          "}")
+            
+            
+            
+            self.MainView.pushButtonPrevious.setStyleSheet("QPushButton {\n"
+                                          "    background: #202020;\n"
+                                          "    color: #333333;\n"
+                                          "    border: 2px solid #202020;\n"
+                                          "    border-radius: 20px;\n"
+                                          "    /*border-style: outset;*/\n"
+                                          "    padding: 5px;\n"
+                                          "}\n"
+                                          "\n"
+                                          "QPushButton:hover {\n"
+                                          "    background: #505050;\n"
+                                          "}\n"
+                                          "\n"
+                                          "QPushButton:pressed {\n"
+                                          "    border-style: inset;\n"
+                                          "    background: #808080;\n"
+                                          "}")
+            
+            self.MainView.pushButtonNext.setStyleSheet("QPushButton {\n"
+                                          "    background: #202020;\n"
+                                          "    color: #333333;\n"
+                                          "    border: 2px solid #202020;\n"
+                                          "    border-radius: 20px;\n"
+                                          "    /*border-style: outset;*/\n"
+                                          "    padding: 5px;\n"
+                                          "}\n"
+                                          "\n"
+                                          "QPushButton:hover {\n"
+                                          "    background: #505050;\n"
+                                          "}\n"
+                                          "\n"
+                                          "QPushButton:pressed {\n"
+                                          "    border-style: inset;\n"
+                                          "    background: #808080;\n"
+                                          "}")
+            
+            self.MainView.pushButtonVolume.setStyleSheet("QPushButton {\n"
+                                          "    background: #202020;\n"
+                                          "    color: #333333;\n"
+                                          "    border: 2px solid #202020;\n"
+                                          "    border-radius: 20px;\n"
+                                          "    /*border-style: outset;*/\n"
+                                          "    padding: 5px;\n"
+                                          "}\n"
+                                          "\n"
+                                          "QPushButton:hover {\n"
+                                          "    background: #505050;\n"
+                                          "}\n"
+                                          "\n"
+                                          "QPushButton:pressed {\n"
+                                          "    border-style: inset;\n"
+                                          "    background: #808080;\n"
+                                          "}")
+
+
+            self.MainView.pushButtonAddFavorite.setStyleSheet("QPushButton {\n"
+                                                 "    background: #202020;\n"
+                                                 "    color: #333333;\n"
+                                                 "    border: 2px solid #202020;\n"
+                                                 "    border-radius: 20px;\n"
+                                                 "\n"
+                                                 "    padding: 5px;\n"
+                                                 "}\n"
+                                                 "\n"
+                                                 "QPushButton:hover {\n"
+                                                 "    background: #505050;\n"
+                                                 "}\n"
+                                                 "\n"
+                                                 "QPushButton:pressed {\n"
+                                                 "    border-style: inset;\n"
+                                                 "    background: #AD3F3F;;\n"
+                                                 "}")
+
+
+        
+        elif self.MainView.radioButtonDarkMode.isChecked():
+            
+            self.MainView.frameContainer.setStyleSheet('QFrame { background-color: #121212;}')
+            
+
+            self.MainView.labelWindowTitleBar.setStyleSheet("QLabel {\n"
+                                                "    font : 77 15pt \"Microsoft JhengHei UI\";\n"
+                                                "    color : #FFFFFF;\n"
+                                                "    border-radius : 0px;\n"
+                                                "    text-align : left;\n"
+                                                "    padding-left: 5px;\n"
+                                                "}\n"
+                                                "\n"
+                                                "QLabel::hover {\n"
+                                                "    color : #4F6FA0;\n"
+                                                "}\n"
+                                                "")
+
+
+
+
+
+
+
+
+
+            self.MainView.pushButtonBack.setStyleSheet("QPushButton{\n"
+                                          "    background-color: transparent;\n"
+                                          "    border-radius : 14px;\n"
+                                          "    font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+                                          "    color: #FFFFFF;\n"
+                                          "    padding : 10px;\n"
+                                          "\n"
+                                          "    text-align : left;\n"
+                                          "}\n"
+                                          "\n"
+                                          "QPushButton:hover{\n"
+                                          "    background-color: #252525;\n"
+                                          "}")
+
+            self.MainView.pushButtonSettings.setStyleSheet("QPushButton{\n"
+                                          "    background-color: transparent;\n"
+                                          "    border-radius : 14px;\n"
+                                          "    font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+                                          "    color: #FFFFFF;\n"
+                                          "    padding : 10px;\n"
+                                          "\n"
+                                          "    text-align : left;\n"
+                                          "}\n"
+                                          "\n"
+                                          "QPushButton:hover{\n"
+                                          "    background-color: #252525;\n"
+                                          "}")
+
+            self.MainView.pushButtonPlayer.setStyleSheet("QPushButton{\n"
+                                          "    background-color: transparent;\n"
+                                          "    border-radius : 14px;\n"
+                                          "    font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+                                          "    color: #FFFFFF;\n"
+                                          "    padding : 10px;\n"
+                                          "\n"
+                                          "    text-align : left;\n"
+                                          "}\n"
+                                          "\n"
+                                          "QPushButton:hover{\n"
+                                          "    background-color: #252525;\n"
+                                          "}")
+
+            self.MainView.pushButtonPlaylistPlayer.setStyleSheet("QPushButton{\n"
+                                          "    background-color: transparent;\n"
+                                          "    border-radius : 14px;\n"
+                                          "    font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+                                          "    color: #FFFFFF;\n"
+                                          "    padding : 10px;\n"
+                                          "\n"
+                                          "    text-align : left;\n"
+                                          "}\n"
+                                          "\n"
+                                          "QPushButton:hover{\n"
+                                          "    background-color: #252525;\n"
+                                          "}")
+
+
+
+
+            # Library
+            self.MainView.labelLibraryWidgetTitle.setStyleSheet("QLabel {\n"
+                                                  "    font : 77 18pt \"Microsoft JhengHei UI\";\n"
+                                                  "    color : #FFFFFF;\n"
+                                                  "    border-radius : 0px;\n"
+                                                  "    text-align : left;\n"
+                                                  "    padding-left: 5px;\n"
+                                                  "}\n"
+                                                  "\n"
+                                                  "QLabel::hover {\n"
+                                                  "    color : #46355e;\n"
+                                                  "}\n"
+                                                  "")
+
+            self.MainView.labelLibraryFileTitle.setStyleSheet("QLabel {\n"
+                                                  "    font : 77 18pt \"Microsoft JhengHei UI\";\n"
+                                                  "    color : #FFFFFF;\n"
+                                                  "    border-radius : 0px;\n"
+                                                  "    text-align : left;\n"
+                                                  "    padding-left: 5px;\n"
+                                                  "}\n"
+                                                  "\n"
+                                                  "QLabel::hover {\n"
+                                                  "    color : #46355e;\n"
+                                                  "}\n"
+                                                  "")
+            
+            self.MainView.labelLibraryMusicTitle.setStyleSheet("QLabel {\n"
+                                                  "    font : 77 18pt \"Microsoft JhengHei UI\";\n"
+                                                  "    color : #FFFFFF;\n"
+                                                  "    border-radius : 0px;\n"
+                                                  "    text-align : left;\n"
+                                                  "    padding-left: 5px;\n"
+                                                  "}\n"
+                                                  "\n"
+                                                  "QLabel::hover {\n"
+                                                  "    color : #46355e;\n"
+                                                  "}\n"
+                                                  "")
+
+
+            self.MainView.pushButtonAddDirectory.setStyleSheet("QPushButton{\n"
+                                               "    background-color: transparent;\n"
+                                               "    border-radius : 14px;\n"
+                                               "    font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+                                               "    color: #FFFFFF;\n"
+                                               "    padding : 10px;\n"
+                                               "\n"
+                                               "    text-align : left;\n"
+                                               "}\n"
+                                               "\n"
+                                               "QPushButton:hover{\n"
+                                               "    background-color: #202020;\n"
+                                               "}")
+            
+            self.MainView.pushButtonAddFile.setStyleSheet("QPushButton{\n"
+                                               "    background-color: transparent;\n"
+                                               "    border-radius : 14px;\n"
+                                               "    font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+                                               "    color: #FFFFFF;\n"
+                                               "    padding : 10px;\n"
+                                               "\n"
+                                               "    text-align : left;\n"
+                                               "}\n"
+                                               "\n"
+                                               "QPushButton:hover{\n"
+                                               "    background-color: #202020;\n"
+                                               "}")
+            
+            self.MainView.pushButtonAddPath.setStyleSheet("QPushButton{\n"
+                                               "    background-color: transparent;\n"
+                                               "    border-radius : 14px;\n"
+                                               "    font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+                                               "    color: #FFFFFF;\n"
+                                               "    padding : 10px;\n"
+                                               "\n"
+                                               "    text-align : left;\n"
+                                               "}\n"
+                                               "\n"
+                                               "QPushButton:hover{\n"
+                                               "    background-color: #202020;\n"
+                                               "}")
+            
+            self.MainView.pushButtonPlaylists.setStyleSheet("QPushButton{\n"
+                                               "    background-color: transparent;\n"
+                                               "    border-radius : 14px;\n"
+                                               "    font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+                                               "    color: #FFFFFF;\n"
+                                               "    padding : 10px;\n"
+                                               "\n"
+                                               "    text-align : left;\n"
+                                               "}\n"
+                                               "\n"
+                                               "QPushButton:hover{\n"
+                                               "    background-color: #202020;\n"
+                                               "}")
+
+            self.MainView.pushButtonFavorites.setStyleSheet("QPushButton{\n"
+                                               "    background-color: transparent;\n"
+                                               "    border-radius : 14px;\n"
+                                               "    font : 75 12pt \"Microsoft JhengHei UI\" bold;\n"
+                                               "    color: #FFFFFF;\n"
+                                               "    padding : 10px;\n"
+                                               "\n"
+                                               "    text-align : left;\n"
+                                               "}\n"
+                                               "\n"
+                                               "QPushButton:hover{\n"
+                                               "    background-color: #202020;\n"
+                                               "}")
+            
+            
+            # Favorites
+            self.MainView.labelFavoriteWidgetTitle.setStyleSheet("QLabel {\n"
+                                                  "    font : 77 18pt \"Microsoft JhengHei UI\";\n"
+                                                  "    color : #FFFFFF;\n"
+                                                  "    border-radius : 0px;\n"
+                                                  "    text-align : left;\n"
+                                                  "    padding-left: 5px;\n"
+                                                  "}\n"
+                                                  "\n"
+                                                  "QLabel::hover {\n"
+                                                  "    color : #46355e;\n"
+                                                  "}\n"
+                                                  "")
+            
+            
+            # Playlists
+            self.MainView.labelPlaylistWidgetTitle.setStyleSheet("QLabel {\n"
+                                                  "    font : 77 18pt \"Microsoft JhengHei UI\";\n"
+                                                  "    color : #FFFFFF;\n"
+                                                  "    border-radius : 0px;\n"
+                                                  "    text-align : left;\n"
+                                                  "    padding-left: 5px;\n"
+                                                  "}\n"
+                                                  "\n"
+                                                  "QLabel::hover {\n"
+                                                  "    color : #46355e;\n"
+                                                  "}\n"
+                                                  "")
+
+            
+            # Settings
+            self.MainView.labelSettingsWidgetTitle.setStyleSheet("QLabel {\n"
+                                                  "    font : 77 18pt \"Microsoft JhengHei UI\";\n"
+                                                  "    color : #FFFFFF;\n"
+                                                  "    border-radius : 0px;\n"
+                                                  "    text-align : left;\n"
+                                                  "    padding-left: 5px;\n"
+                                                  "}\n"
+                                                  "\n"
+                                                  "QLabel::hover {\n"
+                                                  "    color : #46355e;\n"
+                                                  "}\n"
+                                                  "")
+
+
+
+            self.MainView.frameMode.setStyleSheet("QFrame {\n"
+                                            "    background-color: #212121;\n"
+                                            "    border-radius : 40px;\n"
+                                            "}\n"
+                                            "\n"
+                                            "")
+            
+            self.MainView.labelSettingsModeTitle.setStyleSheet("QLabel {\n"
+                                                  "    font : 77 18pt \"Microsoft JhengHei UI\";\n"
+                                                  "    color : #FFFFFF;\n"
+                                                  "    border-radius : 0px;\n"
+                                                  "    text-align : left;\n"
+                                                  "    padding-left: 5px;\n"
+                                                  "}\n"
+                                                  "\n"
+                                                  "QLabel::hover {\n"
+                                                  "    color : #46355e;\n"
+                                                  "}\n"
+                                                  "")
+
+
+
+            self.MainView.radioButtonDarkMode.setStyleSheet("QRadioButton {\n"
+                                                                "    font : 75 11pt \"Microsoft JhengHei UI\"  bold;\n"
+                                                                "    color : #FFFFFF;\n"
+                                                                "    border-radius : 0px;\n"
+                                                                "}\n"
+                                                                "\n"
+                                                                "QRadioButton:hover {\n"
+                                                                "    color : #909090;\n"
+                                                                "    border-radius : 0px;\n"
+                                                                "}\n"
+                                                                "\n"
+                                                                "QRadioButton::checked {\n"
+                                                                "    color : #909090;\n"
+                                                                "    border-radius : 0px;\n"
+                                                                "}\n"
+                                                                "\n"
+                                                                "QRadioButton::indicator {\n"
+                                                                "    color : #909090;\n"
+                                                                "}\n"
+                                                                "\n"
+                                                                "QRadioButton::indicator:checked:pressed {\n"
+                                                                "    color : #909090;\n"
+                                                                "}")
+
+            self.MainView.radioButtonLightMode.setStyleSheet("QRadioButton {\n"
+                                                                 "    font : 75 11pt \"Microsoft JhengHei UI\"  bold;\n"
+                                                                 "    color : #FFFFFF;\n"
+                                                                 "    border-radius : 0px;\n"
+                                                                 "}\n"
+                                                                 "\n"
+                                                                 "QRadioButton:hover {\n"
+                                                                 "    color : #909090;\n"
+                                                                 "    border-radius : 0px;\n"
+                                                                 "}\n"
+                                                                 "\n"
+                                                                 "QRadioButton::checked {\n"
+                                                                 "    color : #909090;\n"
+                                                                 "    border-radius : 0px;\n"
+                                                                 "}\n"
+                                                                 "\n"
+                                                                 "QRadioButton::indicator {\n"
+                                                                 "    color : #909090;\n"
+                                                                 "}\n"
+                                                                 "\n"
+                                                                 "QRadioButton::indicator:checked:pressed {\n"
+                                                                 "    color : #909090;\n"
+                                                                 "}")
+
+
+
+
+            # Player
+            self.MainView.labelAlbum.setStyleSheet("QLabel {\n"
+                                      "    font : 80 16pt \"Microsoft JhengHei UI\" bold;\n"
+                                      "    color : #FFFFFF;\n"
+                                      "    border-radius : 0px;\n"
+                                      "    text-align : left;\n"
+                                      "    padding-left: 5px;\n"
+                                      "}\n"
+                                      "\n"
+                                      "QLabel::hover {\n"
+                                      "    color : #4F6FA0;\n"
+                                      "}\n"
+                                      "")
+
+            self.MainView.labelArtist.setStyleSheet("QLabel {\n"
+                                       "    font : 80 13pt \"Microsoft JhengHei UI\" bold;\n"
+                                       "    color : #FFFFFF;\n"
+                                       "    border-radius : 0px;\n"
+                                       "    text-align : left;\n"
+                                       "    padding-left: 5px;\n"
+                                       "}\n"
+                                       "\n"
+                                       "QLabel::hover {\n"
+                                       "    color : #4F6FA0;\n"
+                                       "}\n"
+                                       "")
+
+            self.MainView.labelTitle.setStyleSheet("QLabel {\n"
+                                      "    font : 77 18pt \"Microsoft JhengHei UI\";\n"
+                                      "    color : #FFFFFF;\n"
+                                      "    border-radius : 0px;\n"
+                                      "    text-align : left;\n"
+                                      "    padding-left: 5px;\n"
+                                      "}\n"
+                                      "\n"
+                                      "QLabel::hover {\n"
+                                      "    color : #4F6FA0;\n"
+                                      "}\n"
+                                      "")
+            
+            self.MainView.labelCodec.setStyleSheet("QLabel {\n"
+                                      "    font : 22 9pt \"Microsoft JhengHei UI\" bold;\n"
+                                      "    color : #FFFFFF;\n"
+                                      "    border-radius : 0px;\n"
+                                      "    text-align : left;\n"
+                                      "    padding-left: 5px;\n"
+                                      "}")
+        
+
+            self.MainView.labelBitrate.setStyleSheet("QLabel {\n"
+                                        "    font : 22 11pt \"Microsoft JhengHei UI\" bold;\n"
+                                        "    color : #FFFFFF;\n"
+                                        "    border-radius : 0px;\n"
+                                        "    text-align : left;\n"
+                                        "    padding-left: 5px;\n"
+                                        "}")
+            
+            self.MainView.labelDurationTime.setStyleSheet("QLabel {\n"
+                                             "    font : 80 8pt \"Microsoft JhengHei UI\" bold;\n"
+                                             "    color : #FFFFFF;\n"
+                                             "    border-radius : 0px;\n"
+                                             "    text-align : left;\n"
+                                             "    padding-left: 5px;\n"
+                                             "}")
+            
+            self.MainView.labelCurrentTime.setStyleSheet("QLabel {\n"
+                                            "    font : 80 8pt \"Microsoft JhengHei UI\" bold;\n"
+                                            "    color : #FFFFFF;\n"
+                                            "    border-radius : 0px;\n"
+                                            "    text-align : left;\n"
+                                            "    padding-left: 5px;\n"
+                                            "}")
+
+
+
+
+
+
+
+
+
+
+            self.MainView.pushButtonAddFavorite.setStyleSheet("QPushButton {\n"
+                                                 "    color: #333333;\n"
+                                                 "    border: 2px solid #202020;\n"
+                                                 "    border-radius: 20px;\n"
+                                                 "\n"
+                                                 "    padding: 5px;\n"
+                                                 "}\n"
+                                                 "\n"
+                                                 "QPushButton:hover {\n"
+                                                 "    background: #202020;\n"
+                                                 "}\n"
+                                                 "\n"
+                                                 "QPushButton:pressed {\n"
+                                                 "    border-style: inset;\n"
+                                                 "    background: #AD3F3F;\n"
+                                                 "}")
+
+
+            self.MainView.pushButtonPlay.setStyleSheet("QPushButton {\n"
+                                          "    color: #333333;\n"
+                                          "    border: 2px solid #202020;\n"
+                                          "    border-radius: 20px;\n"
+                                          "    /*border-style: outset;*/\n"
+                                          "    padding: 5px;\n"
+                                          "}\n"
+                                          "\n"
+                                          "QPushButton:hover {\n"
+                                          "    background: #202020;\n"
+                                          "}\n"
+                                          "\n"
+                                          "QPushButton:pressed {\n"
+                                          "    border-style: inset;\n"
+                                          "    background: qradialgradient(\n"
+                                          "        cx: 0.4, cy: -0.1, fx: 0.4, fy: -0.1,\n"
+                                          "        radius: 1.35, stop: 0 #fff, stop: 1 #ddd);\n"
+                                          "}")
+            self.MainView.pushButtonPrevious.setStyleSheet("QPushButton {\n"
+                                          "    color: #333333;\n"
+                                          "    border: 2px solid #202020;\n"
+                                          "    border-radius: 20px;\n"
+                                          "    /*border-style: outset;*/\n"
+                                          "    padding: 5px;\n"
+                                          "}\n"
+                                          "\n"
+                                          "QPushButton:hover {\n"
+                                          "    background: #202020;\n"
+                                          "}\n"
+                                          "\n"
+                                          "QPushButton:pressed {\n"
+                                          "    border-style: inset;\n"
+                                          "    background: qradialgradient(\n"
+                                          "        cx: 0.4, cy: -0.1, fx: 0.4, fy: -0.1,\n"
+                                          "        radius: 1.35, stop: 0 #fff, stop: 1 #ddd);\n"
+                                          "}")
+            
+            self.MainView.pushButtonNext.setStyleSheet("QPushButton {\n"
+                                          "    color: #333333;\n"
+                                          "    border: 2px solid #202020;\n"
+                                          "    border-radius: 20px;\n"
+                                          "    /*border-style: outset;*/\n"
+                                          "    padding: 5px;\n"
+                                          "}\n"
+                                          "\n"
+                                          "QPushButton:hover {\n"
+                                          "    background: #202020;\n"
+                                          "}\n"
+                                          "\n"
+                                          "QPushButton:pressed {\n"
+                                          "    border-style: inset;\n"
+                                          "    background: qradialgradient(\n"
+                                          "        cx: 0.4, cy: -0.1, fx: 0.4, fy: -0.1,\n"
+                                          "        radius: 1.35, stop: 0 #fff, stop: 1 #ddd);\n"
+                                          "}")
+            
+            self.MainView.pushButtonVolume.setStyleSheet("QPushButton {\n"
+                                          "    color: #333333;\n"
+                                          "    border: 2px solid #202020;\n"
+                                          "    border-radius: 20px;\n"
+                                          "    /*border-style: outset;*/\n"
+                                          "    padding: 5px;\n"
+                                          "}\n"
+                                          "\n"
+                                          "QPushButton:hover {\n"
+                                          "    background: #202020;\n"
+                                          "}\n"
+                                          "\n"
+                                          "QPushButton:pressed {\n"
+                                          "    border-style: inset;\n"
+                                          "    background: qradialgradient(\n"
+                                          "        cx: 0.4, cy: -0.1, fx: 0.4, fy: -0.1,\n"
+                                          "        radius: 1.35, stop: 0 #fff, stop: 1 #ddd);\n"
+                                          "}")

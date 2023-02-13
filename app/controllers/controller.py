@@ -1,57 +1,124 @@
-
-
-import os
-
-
 from PyQt5 import (
+    QtWidgets,
     QtCore,
     QtGui,
-    QtWidgets,
     QtMultimedia
 )
-
+from app.models.modules import (
+    get_path,
+    get_logger,
+    clear_project
+    
+)
 
 from app.views.view import View
 from app.models.model import Model
 
 import logging
+import os
 import sys
 
 
 
 class Controller(object):
-
-    def __init__(self, Logger: logging.Logger):
-
+    
+    
+    def __init__(self, logger : logging.Logger, **struct):
         super(Controller, self).__init__()
         
+        self.logger = logger
+
+
         self.QApplication = QtWidgets.QApplication(sys.argv)
 
-        self.Logger = Logger
+        
+        self.Model = Model(self, **struct)
+
         self.View = View(self)
-        self.Model = Model(self)
-    
-    def execute(self):
-        
-        self.get_main_window_view()
-        
-        self.QApplication.exec_()
-    
-    
 
-    def get_main_window_view(self):
+    
+    
+    def get_main_view(self):
+        
         try:
-
-            self.Logger.info(
-                msg='Obteniendo la vista de la ventana principal...'
-            )
-
-            return self.View.get_main_view()
+        
+            self.View.get_main_view()
+            
+            return sys.exit(self.QApplication.exec_())
 
         except Exception as exception:
-            self.Logger.warning(
-                msg=f'Exception\t{exception}'
+            
+            self.logger.critical(
+                msg = f'Exception : {exception}'
             )
+
+
+
+
+    def window_title_bar_restore(self, component):
+        try:
+            def dobleClickMaximizeRestore(event):
+                if event.type() == QtCore.QEvent.MouseButtonDblClick:
+                    QtCore.QTimer.singleShot(8, lambda: self.window_status_restore(component))
+                    
+            component.frameWindowTitleBar.mouseDoubleClickEvent = dobleClickMaximizeRestore
+
+        except Exception as exception:
+            
+            self.logger.critical(
+                msg = f'Exception : {exception}'
+            )
+
+
+
+
+    def window_status_restore(self, component):
+        try:
+        
+            def window_maximize():
+                return component.showMaximized()
+
+            def window_minimize():
+                return component.showNormal()
+            
+            if component.windowState() == QtCore.Qt.WindowState.WindowNoState:
+                
+                window_maximize()
+                
+                component.pushButtonRestoreWindow.setToolTip('Restore')
+                
+                icon = QtGui.QIcon()
+                icon.addPixmap(
+                    QtGui.QPixmap('app/resources/img/icons/24x24/cil-window-restore.png'), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+                
+                component.pushButtonRestoreWindow.setIcon(icon)
+                component.pushButtonRestoreWindow.setIconSize(QtCore.QSize(20, 20))
+            
+            else:
+                
+                window_minimize()
+                
+                component.pushButtonRestoreWindow.setToolTip('Maximize')
+                
+                icon = QtGui.QIcon()
+                icon.addPixmap(
+                    QtGui.QPixmap(u'app/resources/img/icons/24x24/cil-window-maximize.png'), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+                
+                component.pushButtonRestoreWindow.setIcon(icon)
+                component.pushButtonRestoreWindow.setIconSize(QtCore.QSize(20, 20))
+
+
+
+        except Exception as exception:
+            
+            self.logger.critical(
+                msg = f'Exception : {exception}'
+            )
+
+
+
+
+
 
     def hhmmss(self, ms):
         # s = 1000
@@ -65,73 +132,258 @@ class Controller(object):
 
         return ("%d:%02d:%02d" % (h, m, s)) if h else ("%d:%02d" % (m, s))
 
+
     def dragEnterEvent(self, e):
 
         try:
             if e.mimeData().hasUrls():
                 e.acceptProposedAction()
 
+
         except Exception as exception:
-            self.Logger.warning(
-                msg=f'Exception\t{exception}'
+            
+            self.logger.critical(
+                msg = f'Exception : {exception}'
             )
+
 
     def dropEvent(self, e):
         try:
             for url in e.mimeData().urls():
-                self.View.playlist.addMedia(QtMultimedia.QMediaContent(url))
+                self.View.QMediaPlaylist.addMedia(QtMultimedia.QMediaContent(url))
 
             self.View.PlayerModel.layoutChanged.emit()
 
             # If not playing, seeking to first of newly added + play.
-            if self.View.player.state() != QtMultimedia.QMediaPlayer.PlayingState:
-                i = self.View.playlist.mediaCount() - len(e.mimeData().urls())
-                self.View.playlist.setCurrentIndex(i)
-                self.View.player.play()
+            if self.View.QMediaPlayer.state() != QtMultimedia.QMediaPlayer.PlayingState:
+                i = self.View.QMediaPlaylist.mediaCount() - len(e.mimeData().urls())
+                self.View.QMediaPlaylist.setCurrentIndex(i)
+                self.View.QMediaPlayer.play()
+
 
         except Exception as exception:
-            self.Logger.warning(
-                msg=f'Exception\t{exception}'
+            
+            self.logger.critical(
+                msg = f'Exception : {exception}'
             )
+
+
+    def set_volume_state(self):
+
+        try:
+            self.View.QMediaPlayer.setMuted(not self.View.QMediaPlayer.isMuted())
+
+            if self.View.QMediaPlayer.isMuted():
+                icon = QtGui.QIcon()
+                icon.addPixmap(
+                    QtGui.QPixmap(u'app/resources/img/icons/24x24/cil-volume-off.png'), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+
+                self.View.MainView.pushButtonVolume.setIcon(icon)
+                self.View.MainView.pushButtonVolume.setIconSize(
+                    QtCore.QSize(20, 20))
+
+            else:
+                icon = QtGui.QIcon()
+                icon.addPixmap(
+                    QtGui.QPixmap(u'app/resources/img/icons/24x24/cil-volume-high.png'), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+
+                self.View.MainView.pushButtonVolume.setIcon(icon)
+                self.View.MainView.pushButtonVolume.setIconSize(
+                    QtCore.QSize(20, 20))
+
+
+        except Exception as exception:
+            
+            self.logger.critical(
+                msg = f'Exception : {exception}'
+            )
+
+
+    def play_song(self):
+
+        try:
+
+            if self.View.QMediaPlayer.state() == QtMultimedia.QMediaPlayer.PlayingState:
+                self.View.QMediaPlayer.pause()
+
+            else:
+                self.View.QMediaPlayer.play()
+
+            self.get_metadata()
+
+
+        except Exception as exception:
+            
+            self.logger.critical(
+                msg = f'Exception : {exception}'
+            )
+
+    def next_song(self):
+
+        try:
+
+            self.get_metadata()
+            self.View.QMediaPlaylist.next()
+
+
+        except Exception as exception:
+            
+            self.logger.critical(
+                msg = f'Exception : {exception}'
+            )
+
+    def previous_song(self):
+
+        try:
+            self.get_metadata()
+            self.View.QMediaPlaylist.previous()
+
+
+        except Exception as exception:
+            
+            self.logger.critical(
+                msg = f'Exception : {exception}'
+            )
+
+    def get_metadata(self):
+
+        try:
+
+            if self.View.QMediaPlayer.isMetaDataAvailable():
+
+                try:
+                    album_title = self.View.QMediaPlayer.metaData(QtMultimedia.QMediaMetaData.AlbumTitle)
+                    self.View.MainView.labelAlbum.setText(album_title)
+
+                except Exception as exception:
+
+                    self.View.MainView.labelAlbum.setText('')
+
+                try:
+
+                    contributing_artist = self.View.QMediaPlayer.metaData(QtMultimedia.QMediaMetaData.ContributingArtist)[0]
+                    album_artist = self.View.QMediaPlayer.metaData(QtMultimedia.QMediaMetaData.AlbumArtist)
+
+                    self.View.MainView.labelArtist.setText(album_artist)
+
+                except Exception as exception:
+
+                    self.View.MainView.labelArtist.setText('')
+
+                try:
+
+                    title = self.View.QMediaPlayer.metaData(QtMultimedia.QMediaMetaData.Title)
+
+                    self.View.MainView.labelTitle.setText(title)
+
+                except Exception as exception:
+                    self.View.MainView.labelTitle.setText('')
+
+                try:
+
+                    album_cover_art = self.View.QMediaPlayer.metaData(QtMultimedia.QMediaMetaData.ThumbnailImage.encode('utf-8').decode('utf-8'))
+
+                    if album_cover_art is not None:
+                        self.View.MainView.labelCoverArt.setPixmap(QtGui.QPixmap(album_cover_art))
+
+                    else:
+                        self.View.MainView.labelCoverArt.setPixmap(QtGui.QPixmap(u'app/resources/img/default/cover-art-1.png'))
+
+                except Exception as exception:
+                    self.View.MainView.labelCoverArt.setPixmap(QtGui.QPixmap(u'app/resources/img/default/cover-art-1.png'))
+
+                try:
+                    codec = self.View.QMediaPlayer.metaData(QtMultimedia.QMediaMetaData.AudioCodec)
+
+                    self.View.MainView.labelCodec.setText(codec)
+
+                except Exception as exception:
+
+                    self.View.MainView.labelCodec.setText('')
+
+                try:
+
+                    bitrate = f'{int(self.View.QMediaPlayer.metaData(QtMultimedia.QMediaMetaData.AudioBitRate) * 0.001)}kbps'
+
+                    self.View.MainView.labelBitrate.setText(bitrate)
+
+                except Exception as exception:
+                    self.View.MainView.labelBitrate.setText('')
+
+                # self.View.QMediaPlayer.metaData(QtMultimedia.QMediaMetaData.Lyrics)
+
+
+        except Exception as exception:
+            
+            self.logger.critical(
+                msg = f'Exception : {exception}'
+            )
+
 
     def open_file(self):
         try:
             path, _ = QtWidgets.QFileDialog.getOpenFileName(
-                self.View.MainWindowView,
+                self.View.MainView,
                 "Open file",
                 "",
-                "mp3 Audio (*.mp3);;flac Audio (*.flac);;wav Audio (*.wav);;All files (*.*)",
+                "mp3 Audio (*.mp3);;FLAC Audio (*.flac);;WAV Audio (*.wav);;All files (*.*)",
             )
-
+            path = get_path(path)
+            
             if path:
-                self.View.playlist.addMedia(
-                    QtMultimedia.QMediaContent(QtCore.QUrl.fromLocalFile(path)))
+                self.View.QMediaPlaylist.addMedia(QtMultimedia.QMediaContent(QtCore.QUrl.fromLocalFile(path)))
 
             self.View.PlayerModel.layoutChanged.emit()
 
+
         except Exception as exception:
-            self.Logger.warning(
-                msg=f'Exception\t{exception}'
+            
+            self.logger.critical(
+                msg = f'Exception : {exception}'
             )
 
     def open_directory(self):
+        
+        
+        data = {
+            'object' : {
+                
+                'name' : [],
+                'path' : {
+                    'directory' : [],
+                    'file' : []
+                }
+            },
+            'playlist' : []
+        }
+        
         try:
-            path = QtWidgets.QFileDialog.getExistingDirectory(
-                self.View.MainWindowView
-            )
+            self.View.QMediaPlaylist.clear()
+
+            path = QtWidgets.QFileDialog.getExistingDirectory(self.View.MainView)
 
             if path:
                 self.View.get_progress_view()
+                
                 for root, directories, files in os.walk(path):
 
-                    root = str(root).replace('/', '\\')
+                    root = get_path(root)
 
                     for file in files:
-                        if file[-4:] == 'flac' or file[-3:] == 'mp3' or file[-3:] == 'm4a':
+                        if file[-4:] == 'flac' or file[-3:] == 'mp3' or file[-3:] == 'm4a' or file[-3:] == 'wav':
 
-                            path = f'{root}\\{file}'
+                            path = get_path(os.path.join(root, file))
 
                             if os.path.exists(path):
+                                
+                                # Aqui
+                                
+                                data['object']['name'].append(os.path.dirname(path))
+
+                                data['object']['path']['directory'].append(path)
+                                data['object']['path']['file'].append(file)
+
+
 
                                 max_length = 60
                                 path_length = len(path)
@@ -139,404 +391,199 @@ class Controller(object):
                                 if path_length > max_length:
 
                                     result_length = path_length - max_length
-                                    _path = path[:-result_length] + '...'
+                                    path_display = path[:-result_length] + '...'
 
-                                    self.View.ProgressWindowView.labelProgress.setText(
-                                        _path)
+                                    self.View.ProgressView.labelProgress.setText(path_display)
 
                                 else:
-                                    self.View.ProgressWindowView.labelProgress.setText(
-                                        path)
+                                    self.View.ProgressView.labelProgress.setText(path)
 
-                                self.View.playlist.addMedia(
-                                    QtMultimedia.QMediaContent(QtCore.QUrl.fromLocalFile(path)))
-                                self.Model.EnvironmentModel.attr['path']['file'].append(
-                                    path)
+                                self.View.QMediaPlaylist.addMedia(QtMultimedia.QMediaContent(QtCore.QUrl.fromLocalFile(path)))
+
 
                                 for index in range(len(files)):
 
-                                    self.View.ProgressWindowView.progressBar.setValue(
-                                        int(index))
+                                    self.View.ProgressView.progressBar.setValue(int(index))
 
                                     if index > len(files):
-                                        self.View.ProgressWindowView.progressBar.setValue(
-                                            100)
+                                        self.View.ProgressView.progressBar.setValue(100)
 
-                                    self.View.ProgressWindowView.progressBar.setFormat(
-                                        '%.02f%%' % (float(index)))
+                                    self.View.ProgressView.progressBar.setFormat('%.02f%%' % (float(index)))
+                                    
                                 QtWidgets.QApplication.processEvents()
 
-                                self.View.ProgressWindowView.progressBar.setValue(
-                                    100)
+                                self.View.ProgressView.progressBar.setValue(100)
 
                             else:
                                 pass
-                        self.View.ProgressWindowView.progressBar.setValue(100)
+                        self.View.ProgressView.progressBar.setValue(100)
 
-                self.View.ProgressWindowView.destroy()
+                self.View.ProgressView.destroy()
+                
+            data['object']['name'] = list(dict.fromkeys(data['object']['name']))
+            data['object']['path']['directory'] = list(dict.fromkeys(data['object']['path']['directory']))
+            data['object']['path']['file'] = list(dict.fromkeys(data['object']['path']['file']))
+            
+            
+            self.Model.struct.update(data)
+            
+            print(self.Model.struct)
 
             self.View.PlayerModel.layoutChanged.emit()
 
+
         except Exception as exception:
-            self.Logger.warning(
-                msg=f'Exception\t{exception}'
+            
+            self.logger.critical(
+                msg = f'Exception : {exception}'
             )
 
-    def update_duration(self, duration):
+    def set_duration_update(self, duration):
 
         try:
-            self.View.MainWindowView.horizontalSliderTime.setMaximum(duration)
+            self.View.MainView.horizontalSliderTime.setMaximum(duration)
 
             if duration >= 0:
-                self.View.MainWindowView.labelDuration.setText(
-                    self.hhmmss(duration))
+                self.View.MainView.labelDurationTime.setText(self.hhmmss(duration))
+
 
         except Exception as exception:
-            self.Logger.warning(
-                msg=f'Exception\t{exception}'
+            
+            self.logger.critical(
+                msg = f'Exception : {exception}'
             )
 
-    def update_position(self, position):
+    def set_position_update(self, position):
 
         try:
             if position >= 0:
-                self.View.MainWindowView.labelTime.setText(
-                    self.hhmmss(position))
+                self.View.MainView.labelCurrentTime.setText(self.hhmmss(position))
 
             # Disable the events to prevent updating triggering a setPosition event (can cause stuttering).
-            self.View.MainWindowView.horizontalSliderTime.blockSignals(True)
-            self.View.MainWindowView.horizontalSliderTime.setValue(position)
-            self.View.MainWindowView.horizontalSliderTime.blockSignals(False)
+            self.View.MainView.horizontalSliderTime.blockSignals(True)
+            self.View.MainView.horizontalSliderTime.setValue(position)
+            self.View.MainView.horizontalSliderTime.blockSignals(False)
+
 
         except Exception as exception:
-            self.Logger.warning(
-                msg=f'Exception\t{exception}'
+            
+            self.logger.critical(
+                msg = f'Exception : {exception}'
             )
 
-    def playlist_selection_changed(self, ix):
+    def set_playlist_selection(self, ix):
 
         try:
             # We receive a QItemSelection from selectionChanged.
             i = ix.indexes()[0].row()
-            self.View.playlist.setCurrentIndex(i)
+            self.View.QMediaPlaylist.setCurrentIndex(i)
+
 
         except Exception as exception:
-            self.Logger.warning(
-                msg=f'Exception\t{exception}'
+            
+            self.logger.critical(
+                msg = f'Exception : {exception}'
             )
 
-    def playlist_position_changed(self, i):
+    def set_playlist_position(self, i):
         try:
             if i > -1:
                 ix = self.View.PlayerModel.index(i)
-                self.View.MainWindowView.listViewPlaylist.setCurrentIndex(ix)
+                self.View.MainView.listViewPlayer.setCurrentIndex(ix)
+
 
         except Exception as exception:
-            self.Logger.warning(
-                msg=f'Exception\t{exception}'
+            
+            self.logger.critical(
+                msg = f'Exception : {exception}'
             )
 
     def exceptions(self, *args):
-        self.Logger.warning(
-            msg=f'Exception\t{args}'
-        )
+        print(args)
 
-    def play_song(self):
 
+    def set_reproduction_state(self, state):
         try:
-
-            if self.View.player.state() == QtMultimedia.QMediaPlayer.PlayingState:
-                self.View.player.pause()
-
-            else:
-                self.View.player.play()
-
-            self.meta_data_changed()
-
-        except Exception as exception:
-            self.Logger.warning(
-                msg=f'Exception\t{exception}'
-            )
-
-    def next_song(self):
-
-        try:
-
-            self.meta_data_changed()
-            self.View.playlist.next()
-
-        except Exception as exception:
-            self.Logger.warning(
-                msg=f'Exception\t{exception}'
-            )
-
-    def previous_song(self):
-
-        try:
-            self.meta_data_changed()
-            self.View.playlist.previous()
-
-        except Exception as exception:
-            self.Logger.warning(
-                msg=f'Exception\t{exception}'
-            )
-
-    def meta_data_changed(self):
-
-        try:
-
-            if self.View.player.isMetaDataAvailable():
-
-                try:
-                    album_title = self.View.player.metaData(
-                        QtMultimedia.QMediaMetaData.AlbumTitle)
-
-                    self.Model.FileModel.attr['file']['metadata']['album'] = album_title
-
-                    self.View.MainWindowView.labelAlbumSong.setText(
-                        album_title)
-
-                except Exception as exception:
-                    self.Logger.warning(
-                        msg=f'Exception\t{exception}'
-                    )
-
-                    self.View.MainWindowView.labelAlbumSong.setText('')
-
-                try:
-
-                    contributing_artist = self.View.player.metaData(
-                        QtMultimedia.QMediaMetaData.ContributingArtist)[0]
-                    album_artist = self.View.player.metaData(
-                        QtMultimedia.QMediaMetaData.AlbumArtist)
-
-                    self.View.MainWindowView.labelArtistSong.setText(
-                        album_artist)
-
-                    self.Model.FileModel.attr['file']['metadata']['contributing'] = contributing_artist
-                    self.Model.FileModel.attr['file']['metadata']['artist'] = album_artist
-
-                except Exception as exception:
-                    self.Logger.warning(
-                        msg=f'Exception\t{exception}'
-                    )
-
-                    self.View.MainWindowView.labelArtistSong.setText('')
-
-                try:
-
-                    title = self.View.player.metaData(
-                        QtMultimedia.QMediaMetaData.Title)
-
-                    self.Model.FileModel.attr['file']['metadata']['title'] = title
-
-                    self.View.MainWindowView.labelTitleSong.setText(title)
-
-                except Exception as exception:
-                    self.Logger.warning(
-                        msg=f'Exception\t{exception}'
-                    )
-
-                    self.View.MainWindowView.labelTitleSong.setText('')
-
-                try:
-
-                    album_cover_art = self.View.player.metaData(
-                        QtMultimedia.QMediaMetaData.ThumbnailImage.encode('utf-8').decode('utf-8'))
-
-                    if album_cover_art is not None:
-                        self.View.MainWindowView.labelCoverArt.setPixmap(
-                            QtGui.QPixmap(album_cover_art)
-                        )
-
-                        self.Model.FileModel.attr['file']['metadata']['cover'] = album_cover_art
-
-                    else:
-                        self.View.MainWindowView.labelCoverArt.setPixmap(
-                            QtGui.QPixmap(u'app/resources/img/default/cover-art.png'))
-
-                except Exception as exception:
-                    self.Logger.warning(
-                        msg=f'Exception\t{exception}'
-                    )
-
-                    self.View.MainWindowView.labelCoverArt.setPixmap(
-                        QtGui.QPixmap(u'app/resources/img/default/cover-art.png'))
-
-                try:
-                    codec = self.View.player.metaData(
-                        QtMultimedia.QMediaMetaData.AudioCodec)
-
-                    self.Model.FileModel.attr['file']['metadata']['codec'] = codec
-                    self.View.MainWindowView.labelCodec.setText(codec)
-
-                except Exception as exception:
-                    self.Logger.warning(
-                        msg=f'Exception\t{exception}'
-                    )
-
-                    self.View.MainWindowView.labelCodec.setText('')
-
-                try:
-
-                    bitrate = f'{int(self.View.player.metaData(QtMultimedia.QMediaMetaData.AudioBitRate) * 0.001)}kbps'
-
-                    self.Model.FileModel.attr['file']['metadata']['bitrate'] = bitrate
-
-                    self.View.MainWindowView.labelBitrate.setText(
-                        bitrate
-                    )
-
-                except Exception as exception:
-                    self.Logger.warning(
-                        msg=f'Exception\t{exception}'
-                    )
-
-                    self.View.MainWindowView.labelBitrate.setText('')
-
-                # self.View.player.metaData(QtMultimedia.QMediaMetaData.Lyrics)
-
-        except Exception as exception:
-            self.Logger.warning(
-                msg=f'Exception\t{exception}'
-            )
-
-    def handle_reproduction_state(self, state):
-        try:
-            if self.View.player.state() == QtMultimedia.QMediaPlayer.PlayingState:
-                _icon = QtGui.QIcon()
-                _icon.addPixmap(
+            if self.View.QMediaPlayer.state() == QtMultimedia.QMediaPlayer.PlayingState:
+                icon = QtGui.QIcon()
+                icon.addPixmap(
                     QtGui.QPixmap(u'app/resources/img/icons/24x24/cil-media-pause.png'), QtGui.QIcon.Normal, QtGui.QIcon.Off)
 
-                self.View.MainWindowView.pushButtonPlay.setIcon(_icon)
-                self.View.MainWindowView.pushButtonPlay.setIconSize(
+                self.View.MainView.pushButtonPlay.setIcon(icon)
+                self.View.MainView.pushButtonPlay.setIconSize(
                     QtCore.QSize(20, 20))
 
             else:
-                _icon = QtGui.QIcon()
-                _icon.addPixmap(
+                icon = QtGui.QIcon()
+                icon.addPixmap(
                     QtGui.QPixmap(u'app/resources/img/icons/24x24/cil-media-play.png'), QtGui.QIcon.Normal, QtGui.QIcon.Off)
 
-                self.View.MainWindowView.pushButtonPlay.setIcon(_icon)
-                self.View.MainWindowView.pushButtonPlay.setIconSize(
+                self.View.MainView.pushButtonPlay.setIcon(icon)
+                self.View.MainView.pushButtonPlay.setIconSize(
                     QtCore.QSize(20, 20))
 
-            self.meta_data_changed()
+            self.get_metadata()
+
 
         except Exception as exception:
-            self.Logger.warning(
-                msg=f'Exception\t{exception}'
+            
+            self.logger.critical(
+                msg = f'Exception : {exception}'
             )
 
-    def handle_volume_state(self):
 
-        try:
-            self.View.player.setMuted(not self.View.player.isMuted())
-
-            if self.View.player.isMuted():
-                _icon = QtGui.QIcon()
-                _icon.addPixmap(
-                    QtGui.QPixmap(u'app/resources/img/icons/24x24/cil-volume-off.png'), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-
-                self.View.MainWindowView.pushButtonVolume.setIcon(_icon)
-                self.View.MainWindowView.pushButtonVolume.setIconSize(
-                    QtCore.QSize(20, 20))
-
-            else:
-                _icon = QtGui.QIcon()
-                _icon.addPixmap(
-                    QtGui.QPixmap(u'app/resources/img/icons/24x24/cil-volume-high.png'), QtGui.QIcon.Normal, QtGui.QIcon.Off)
-
-                self.View.MainWindowView.pushButtonVolume.setIcon(_icon)
-                self.View.MainWindowView.pushButtonVolume.setIconSize(
-                    QtCore.QSize(20, 20))
-
-        except Exception as exception:
-            self.Logger.warning(
-                msg=f'Exception\t{exception}'
-            )
 
     def save_playlist(self):
 
         try:
 
-            self.View.get_data_receiver_window_view(
-                'Ingresa el nombre de la playlist'
+            self.View.get_data_receiver_view(
+                title = 'Ingresa el nombre de la playlist'
             )
+
 
         except Exception as exception:
-            self.Logger.warning(
-                msg=f'Exception\t{exception}'
+            
+            self.logger.critical(
+                msg = f'Exception : {exception}'
             )
 
-    def playlist_data(self):
+
+
+    def get_playlist_data(self, playlist_name : str):
 
         try:
 
-            model = self.View.MainWindowView.listViewPlaylist.model()
+            model = self.View.MainView.listViewPlayer.model()
             row_count = model.rowCount(QtCore.QModelIndex())
 
-            self.Logger.debug(
-                msg=f'Total de filas contadas : {row_count}'
-            )
 
             count = 0
 
-            self.Logger.debug(
-                msg=f'Total contador : {count}'
-            )
-
-            self.Logger.debug(msg='Iniciando iteracion...')
-
             self.View.get_progress_view()
 
-            for file in self.Model.EnvironmentModel.attr['path']['file']:
+            for file in self.Model.struct['object']['path']['directory']:
 
-                self.Logger.debug(msg=f'{file}')
-
-                if self.Model.EnvironmentModel.attr['system']['os'] == 'Windows':
-
-                    self.Logger.debug(
-                        msg='Iniciando separacion de caracteres...')
-
-                    __file = str(file).split('\\')
-                    self.Logger.debug(msg=f'{__file}')
-
-                elif self.Model.EnvironmentModel.attr['system']['os'] == 'Linux':
-
-                    self.Logger.debug(
-                        msg='Iniciando separacion de caracteres...')
-
-                    __file = str(file).split('/')
-                    self.Logger.debug(msg=f'{__file}')
-
-                __file = __file.pop()
-
-                self.Logger.debug(msg=f'Resultado obtenido : {__file}')
-
-                self.Logger.debug(
-                    msg='Iniciando iteracion al total de filas...')
+                file_name = os.path.basename(file)
 
                 for row in range(row_count):
                     index = model.index(row, 0)
                     item = model.data(index, QtCore.Qt.DisplayRole)
 
-                    if str(item) == str(__file):
+                    if str(item) == str(file_name):
+                        
+                        playlist_id = self.Model.Database.get_id()
+                        playlist_file_path = file
+                        playlist_file_name = file_name
 
-                        self.Logger.debug(msg=f'Archivo encontrado : {file}')
-
-                        self.Logger.debug(
-                            msg=f'Total de archivos contados : {count}')
-
-                        self.Logger.debug(
-                            msg='Iniciando la insercion de datos...')
-
-                        self.Model.DatabaseModel.insert_data(
-                            'INSERT INTO playlist (id, name, file_path) VALUES (?, ?, ?)',
-                            (
-                                self.Model.DatabaseModel.get_id(),
-                                self.Model.EnvironmentModel.attr['data'],
-                                file,
+                        
+                        self.Model.Database.insert_data(
+                            query = 'INSERT INTO playlist (playlist_id, playlist_name, playlist_file_path, playlist_file_name) VALUES (?, ?, ?, ?)',
+                            parameters = (
+                                playlist_id,
+                                playlist_name,
+                                playlist_file_path,
+                                playlist_file_name
                             )
                         )
 
@@ -548,175 +595,161 @@ class Controller(object):
 
                         if path_length > max_length:
                             result_length = path_length - max_length
-                            _file = file[:-result_length] + '...'
+                            self.View.ProgressView.labelProgress.setText(file[:-result_length] + '...')
 
-                            self.View.ProgressWindowView.labelProgress.setText(
-                                _file)
-
-                        self.View.ProgressWindowView.progressBar.setValue(
-                            int(count))
-                        self.View.ProgressWindowView.progressBar.setFormat(
-                            f'{count} Archivos insertados')
+                        self.View.ProgressView.progressBar.setMaximum(row_count)
+                        self.View.ProgressView.progressBar.setValue(int(count))
+                        self.View.ProgressView.progressBar.setFormat(f'{count} Archivos insertados')
 
                         QtWidgets.QApplication.processEvents()
 
-                        self.Logger.debug(msg='Insercion finalizada.')
 
             print(f'count       : {count}')
             print(f'row_count   : {row_count}')
 
             if count == row_count:
-                self.View.ProgressWindowView.progressBar.setValue(100)
-
-                self.Logger.info(
-                    msg='La insercion se ha ejecutado correctamente.')
-                self.View.ProgressWindowView.destroy()
+                self.View.ProgressView.progressBar.setValue(100)
+                self.View.ProgressView.destroy()
 
                 # print(self.View.playlist.currentMedia().canonicalUrl().toString().encode('utf-8').decode('utf-8'))
 
             # print(self.View.playlist.currentMedia().canonicalUrl().toString().encode('utf-8').decode('utf-8'))
 
+
         except Exception as exception:
-            self.Logger.warning(
-                msg=f'Exception\t{exception}'
+            
+            self.logger.critical(
+                msg = f'Exception : {exception}'
             )
 
-    def confirm_data(self):
+
+    def set_confirmation(self):
 
         try:
 
-            self.Logger.debug(msg='Obteniendo dato solicitado...')
+            playlist = self.View.DataReceiverView.lineEditData.text()
+            
+            self.get_playlist_data(playlist)
+            self.get_playlist()
 
-            data = self.View.DataReceiverWindowView.lineEditData.text()
-            self.Logger.debug(msg=f'Dato recibido : {data}')
+            
 
-            self.Model.EnvironmentModel.attr['data'] = str(data)
+            return self.View.DataReceiverView.destroy()
 
-            self.Logger.debug(msg='Destruyendo la ventana de solicitud...')
-
-            self.View.DataReceiverWindowView.destroy()
-            self.Logger.debug(msg='Ventana destruida.')
-
-            return self.playlist_data()
 
         except Exception as exception:
-            self.Logger.warning(
-                msg=f'Exception\t{exception}'
+            
+            self.logger.critical(
+                msg = f'Exception : {exception}'
             )
+
+
+
 
     def get_playlist(self):
 
         try:
 
-            self.Logger.debug(msg='Obteniendo nombres de playlists...')
-
-            self.Model.DatabaseModel.cursor.execute(
-                'SELECT name FROM playlist GROUP BY name ORDER BY name ASC'
+            self.Model.Database.cursor.execute(
+                'SELECT playlist_name FROM playlist GROUP BY playlist_name ORDER BY playlist_name ASC'
             )
             model = QtGui.QStandardItemModel()
-            self.View.MainWindowView.listViewPlaylists.setModel(model)
+            self.View.MainView.listViewPlaylists.setModel(model)
 
-            for parameter in self.Model.DatabaseModel.cursor.fetchall():
+            for parameter in self.Model.Database.cursor.fetchall():
                 item = QtGui.QStandardItem(parameter[0])
-
-                self.Logger.debug(msg=f'Nombres encontrados : {item.text()}')
                 model.appendRow(item)
-                # self.View.playlist.addMedia(QtMultimedia.QMediaContent(QtCore.QUrl.fromLocalFile(path)))
+
 
         except Exception as exception:
-            self.Logger.warning(
-                msg=f'Exception\t{exception}'
+            
+            self.logger.critical(
+                msg = f'Exception : {exception}'
             )
 
-    def get_playlists(self):
 
-        try:
-            self.View.MainWindowView.stackedWidgetContainer.setCurrentWidget(
-                self.View.MainWindowView.widgetPlaylist)
-            self.get_playlist()
-
-        except Exception as exception:
-            self.Logger.warning(
-                msg=f'Exception\t{exception}'
-            )
 
     def open_playlist(self):
 
         try:
 
-            self.View.playlist.clear()
+            self.View.QMediaPlaylist.clear()
 
-            self.Logger.debug(msg='Iniciando iteracion de playlist...')
 
-            for index in self.View.MainWindowView.listViewPlaylists.selectedIndexes():
-                item = self.View.MainWindowView.listViewPlaylists.model().itemFromIndex(index)
+            for index in self.View.MainView.listViewPlaylists.selectedIndexes():
+                item = self.View.MainView.listViewPlaylists.model().itemFromIndex(index)
 
-                self.Model.DatabaseModel.cursor.execute(
-                    'SELECT file_path FROM playlist WHERE name = ?',
+                self.Model.Database.cursor.execute(
+                    'SELECT playlist_file_path FROM playlist WHERE playlist_name = ?',
                     (item.text(),)
                 )
-                self.Logger.debug(
-                    msg=f'Seleccionando las rutas de los archivos donde el nombre sea : {item.text()}')
 
-                self.View.MainWindowView.labelPlaylist.setText(
-                    f'Playlist {item.text()}'
-                )
+                #self.View.MainView.labelPl.setText(f'Playlist {item.text()}')
+                
 
-                for parameter in self.Model.DatabaseModel.cursor.fetchall():
-                    self.Logger.debug(
-                        msg=f'Insertando los parametros : {parameter[0]}')
+                for parameter in self.Model.Database.cursor.fetchall():
 
-                    self.View.playlist.addMedia(QtMultimedia.QMediaContent(
-                        QtCore.QUrl.fromLocalFile(parameter[0])))
+                    self.View.QMediaPlaylist.addMedia(QtMultimedia.QMediaContent(QtCore.QUrl.fromLocalFile(parameter[0])))
 
             self.View.PlayerModel.layoutChanged.emit()
 
-            self.View.get_message_view(
-                title='Operacion finalizada',
-                message='Playlist cargada',
-                status=QtWidgets.QMessageBox.Information
-            )
+            print(True)
+
 
         except Exception as exception:
-            self.Logger.warning(
-                msg=f'Exception\t{exception}'
+            
+            self.logger.critical(
+                msg = f'Exception : {exception}'
             )
 
     def search(self):
-        data = str(None)
-        data = self.View.MainWindowView.lineEdit.text()
+        try:
+            data = str(None)
+            data = self.View.MainView.lineEdit.text()
 
-        model = self.View.MainWindowView.listViewPlaylist.model()
-        match = model.match(
-            model.index(
-                0, self.View.MainWindowView.listViewPlaylist.modelColumn()),
-            QtCore.Qt.DisplayRole,
-            data,
-            hits=1,
-            flags=QtCore.Qt.MatchStartsWith)
+            model = self.View.MainView.listViewPlaylist.model()
+            match = model.match(
+                model.index(
+                    0, self.View.MainView.listViewPlaylist.modelColumn()),
+                QtCore.Qt.DisplayRole,
+                data,
+                hits=1,
+                flags=QtCore.Qt.MatchStartsWith)
 
-        if match:
-            self.View.MainWindowView.listViewPlaylist.setCurrentIndex(match[0])
-            self.View.MainWindowView.listViewPlaylist.setFocus()
-            print(match[0].data())
+            if match:
+                self.View.MainView.listViewPlaylist.setCurrentIndex(match[0])
+                self.View.MainView.listViewPlaylist.setFocus()
+                print(match[0].data())
+
+        except Exception as exception:
+            
+            self.logger.critical(
+                msg = f'Exception : {exception}'
+            )
 
     def add_favorite(self):
-        
-        title = self.View.player.metaData(QtMultimedia.QMediaMetaData.PosterUrl.encode('utf-8').decode('utf-8'))
-        print(title)
+        try:
+            title = self.View.player.metaData(QtMultimedia.QMediaMetaData.PosterUrl.encode('utf-8').decode('utf-8'))
+            print(title)
 
-        artist = self.View.player.metaData(
-            QtMultimedia.QMediaMetaData.AlbumArtist)
-        album = self.View.player.metaData(
-            QtMultimedia.QMediaMetaData.AlbumTitle)
+            artist = self.View.player.metaData(
+                QtMultimedia.QMediaMetaData.AlbumArtist)
+            album = self.View.player.metaData(
+                QtMultimedia.QMediaMetaData.AlbumTitle)
 
-        self.Model.DatabaseModel.insert_data(
-            query='INSERT INTO favorite (title, artist, album) VALUES (?,?,?)', parameters=(title, artist, album,))
+            self.Model.Database.insert_data(
+                query='INSERT INTO favorite (title, artist, album) VALUES (?,?,?)', parameters=(title, artist, album,))
 
-        self.View.MainWindowView.pushButtonAddFavorite.setStyleSheet(u"QPushButton {\n"
-                                                                     "    background-color: #AD3F3F;\n"
-                                                                     "    border: 2px solid #222222;\n"
-                                                                     "    border-radius: 20px;\n"
-                                                                     "    /*border-style: outset;*/\n"
-                                                                     "    padding: 5px;\n"
-                                                                     "}\n")
+            self.View.MainView.pushButtonAddFavorite.setStyleSheet(u"QPushButton {\n"
+                                                                        "    background-color: #AD3F3F;\n"
+                                                                        "    border: 2px solid #222222;\n"
+                                                                        "    border-radius: 20px;\n"
+                                                                        "    /*border-style: outset;*/\n"
+                                                                        "    padding: 5px;\n"
+                                                                        "}\n")
+        except Exception as exception:
+            
+            self.logger.critical(
+                msg = f'Exception : {exception}'
+            )
+

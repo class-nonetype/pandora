@@ -1,32 +1,28 @@
-
-from app.models.database import (
-    DatabaseModel
+from app.models.modules import (
+    Database,
+    
+    get_path
 )
 
-from app.models.environment import (
-    EnvironmentModel
-)
+import os
 
-from app.models.file import (
-    FileModel
-)
 
 
 
 class Model(object):
 
-    def __init__(self, Controller) -> None:
+    def __init__(self, Controller, **struct) -> None:
         super(Model, self).__init__()
         self.Controller = Controller
+        
+        self.struct = struct
 
-        self.EnvironmentModel = EnvironmentModel(self.Controller)
-        self.EnvironmentModel.create_storage_directory()
-        self.EnvironmentModel.create_scripts_directory()
-        self.EnvironmentModel.create_local_database()
-
-        self.DatabaseModel = DatabaseModel(self.Controller)
-        self.DatabaseModel.set_local_database(
-            self.EnvironmentModel.attr['path']['storage']['local']
+        
+        self.Database = Database(self.Controller)
+        self.Database.set_local_database(
+            get_path(os.path.join(self.struct['struct']['database'], 'storage.db'))
         )
+        
 
-        self.FileModel = FileModel()
+        
+
